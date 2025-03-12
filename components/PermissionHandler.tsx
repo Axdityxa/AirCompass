@@ -45,17 +45,26 @@ export default function PermissionHandler({ onPermissionsGranted }: PermissionHa
       Alert.alert(
         "Notification Permission",
         "You won't receive air quality alerts. You can enable notifications in your device settings.",
-        [{ text: "OK" }]
+        [{ text: "OK", onPress: () => onPermissionsGranted() }]
       );
+    } else {
+      // Continue to the auth screen after permissions are handled
+      onPermissionsGranted();
     }
-    
-    // Continue to the main app regardless of notification permission
-    onPermissionsGranted();
   };
 
   const skipNotifications = () => {
     setShowNotificationModal(false);
+    setNotificationPermissionRequested(true);
+    // Continue to the auth screen even if notifications are skipped
     onPermissionsGranted();
+  };
+
+  const skipLocationPermission = () => {
+    setShowLocationModal(false);
+    setLocationPermissionRequested(true);
+    // Show notification permission even if location is skipped
+    setShowNotificationModal(true);
   };
 
   return (
@@ -75,12 +84,9 @@ export default function PermissionHandler({ onPermissionsGranted }: PermissionHa
             <View style={styles.buttonContainer}>
               <Pressable 
                 style={[styles.button, styles.cancelButton]} 
-                onPress={() => {
-                  setShowLocationModal(false);
-                  router.replace('/(tabs)');
-                }}
+                onPress={skipLocationPermission}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>Skip</Text>
               </Pressable>
               <Pressable 
                 style={[styles.button, styles.allowButton]} 
@@ -110,7 +116,7 @@ export default function PermissionHandler({ onPermissionsGranted }: PermissionHa
                 style={[styles.button, styles.cancelButton]} 
                 onPress={skipNotifications}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>Skip</Text>
               </Pressable>
               <Pressable 
                 style={[styles.button, styles.allowButton]} 

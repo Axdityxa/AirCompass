@@ -8,8 +8,8 @@ export default function PermissionsScreen() {
   const router = useRouter();
 
   const handlePermissionsGranted = () => {
-    // Navigate to the main app after permissions are handled
-    router.replace('/(tabs)');
+    // Navigate to the authentication screen after permissions are handled
+    router.replace('/auth/sign-in');
   };
 
   return (
