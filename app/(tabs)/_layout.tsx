@@ -7,9 +7,11 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useAqiPreferences } from '@/contexts/aqi-preferences-context';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { preferredAqiCategory } = useAqiPreferences();
 
   return (
     <Tabs
@@ -45,6 +47,15 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="select-air"
+        options={{
+          title: 'Air Quality',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="wind" color={color} />,
+          // Hide this tab from the tab bar since it's only for onboarding
+          href: null,
         }}
       />
     </Tabs>
