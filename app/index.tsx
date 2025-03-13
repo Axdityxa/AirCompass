@@ -2,13 +2,23 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LaunchScreen() {
   const router = useRouter();
 
-  const handleContinue = () => {
-    // Navigate to the permissions screen
-    router.push('/permissions');
+  const handleContinue = async () => {
+    try {
+      // Set flag indicating user has started the app
+      await AsyncStorage.setItem('hasStartedApp', 'true');
+      
+      // Navigate to the permissions screen
+      router.push('/permissions');
+    } catch (error) {
+      console.error('Error setting app started flag:', error);
+      // Navigate anyway in case of error
+      router.push('/permissions');
+    }
   };
 
   return (

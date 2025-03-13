@@ -6,9 +6,13 @@ import { useAqiPreferences } from '@/contexts/aqi-preferences-context';
 
 interface AqiPreferenceCardProps {
   showEditButton?: boolean;
+  onEditPress?: () => void;
 }
 
-export default function AqiPreferenceCard({ showEditButton = true }: AqiPreferenceCardProps) {
+export default function AqiPreferenceCard({ 
+  showEditButton = true,
+  onEditPress
+}: AqiPreferenceCardProps) {
   const { preferredAqiCategory } = useAqiPreferences();
   const router = useRouter();
 
@@ -17,7 +21,11 @@ export default function AqiPreferenceCard({ showEditButton = true }: AqiPreferen
   }
 
   const handleEditPress = () => {
-    router.push('/(tabs)/select-air');
+    if (onEditPress) {
+      onEditPress();
+    } else {
+      router.push('/(tabs)/select-air');
+    }
   };
 
   return (

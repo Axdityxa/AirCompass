@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '@/contexts/auth-context';
@@ -7,17 +7,60 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useAqiPreferences } from '@/contexts/aqi-preferences-context';
 import { useRouter } from 'expo-router';
+import { usePermissions } from '@/contexts/permissions-context';
+import { getCurrentLocation, getFormattedAddress } from '@/utils/location';
+import { LocationData } from '@/utils/location';
+import AqiPreferenceCard from '@/components/AqiPreferenceCard';
 
 export default function HomeScreen() {
   const { user } = useAuth();
   const { preferredAqiCategory } = useAqiPreferences();
+  const { hasLocationPermission } = usePermissions();
   const router = useRouter();
+  
+  const [location, setLocation] = useState<LocationData | null>(null);
+  const [address, setAddress] = useState<string>('');
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
 
   // Get current date
   const today = new Date();
   const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
   const dayOfMonth = today.getDate();
   const month = today.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+
+  // Get user's location
+  useEffect(() => {
+    const fetchLocation = async () => {
+      if (hasLocationPermission) {
+        setIsLoadingLocation(true);
+        try {
+          const locationData = await getCurrentLocation();
+          setLocation(locationData);
+          
+          if (locationData) {
+            const formattedAddress = await getFormattedAddress(
+              locationData.latitude,
+              locationData.longitude
+            );
+            setAddress(formattedAddress || 'Unknown location');
+          }
+        } catch (error) {
+          console.error('Error fetching location:', error);
+        } finally {
+          setIsLoadingLocation(false);
+        }
+      }
+    };
+
+    fetchLocation();
+  }, [hasLocationPermission]);
+
+  // Mock AQI data (replace with actual API call)
+  const mockAqiValue = 50;
+  const mockAqiCategory = {
+    name: 'Good',
+    color: '#4CAF50',
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -47,19 +90,25 @@ export default function HomeScreen() {
         </View>
 
         {/* Overview section */}
-        <Text style={styles.sectionTitle}>Overview</Text>
+        <Text style={styles.sectionTitle}>Current Air Quality</Text>
         
         {/* AQI Card */}
         <View style={styles.aqiCard}>
           <View style={styles.aqiInfo}>
             <Text style={styles.aqiLabel}>AQI Value</Text>
-            <Text style={styles.locationText}>Location name</Text>
+            <Text style={styles.locationText}>
+              {isLoadingLocation ? 'Loading location...' : (address || 'Location unavailable')}
+            </Text>
           </View>
-          <View style={styles.aqiValueContainer}>
-            <Text style={styles.aqiValue}>50</Text>
-            <TouchableOpacity>
-              <Text style={styles.tellMeMoreText}>Tell me more ›</Text>
-            </TouchableOpacity>
+          <View style={[styles.aqiValueContainer, { backgroundColor: mockAqiCategory.color }]}>
+            {isLoadingLocation ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Text style={styles.aqiValue}>{mockAqiValue}</Text>
+                <Text style={styles.aqiCategoryText}>{mockAqiCategory.name}</Text>
+              </>
+            )}
           </View>
         </View>
 
@@ -102,12 +151,20 @@ export default function HomeScreen() {
 
         {/* Previous Locations section */}
         <Text style={styles.sectionTitle}>Previous Locations</Text>
-        <TouchableOpacity style={styles.mapContainer}>
+        <TouchableOpacity 
+          style={styles.mapContainer}
+          onPress={() => router.push('/(tabs)/map')}
+        >
           <Image 
             source={require('@/assets/images/map-preview.png')} 
             style={styles.mapImage}
             resizeMode="cover"
           />
+          {location && (
+            <View style={styles.currentLocationMarker}>
+              <Ionicons name="location" size={24} color="#1e88e5" />
+            </View>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -159,6 +216,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
     marginBottom: 16,
+    marginTop: 24,
   },
   aqiCard: {
     backgroundColor: '#FFFFFF',
@@ -187,7 +245,7 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   aqiValueContainer: {
-    backgroundColor: '#F87171',
+    backgroundColor: '#4CAF50',
     borderRadius: 8,
     width: 80,
     height: 80,
@@ -200,9 +258,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 4,
   },
-  tellMeMoreText: {
-    fontSize: 10,
+  aqiCategoryText: {
+    fontSize: 12,
     color: '#FFFFFF',
+    fontWeight: '500',
   },
   preventiveMeasuresLink: {
     flexDirection: 'row',
@@ -256,18 +315,21 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   mapContainer: {
+    width: '100%',
+    height: 200,
     borderRadius: 16,
     overflow: 'hidden',
-    height: 150,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 15,
-    elevation: 2,
+    position: 'relative',
   },
   mapImage: {
     width: '100%',
     height: '100%',
+  },
+  currentLocationMarker: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginLeft: -12,
+    marginTop: -24,
   },
 });

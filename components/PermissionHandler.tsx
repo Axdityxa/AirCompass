@@ -1,27 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, Alert } from 'react-native';
-import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
-import { useRouter } from 'expo-router';
+import { usePermissions } from '@/contexts/permissions-context';
 
 interface PermissionHandlerProps {
   onPermissionsGranted: () => void;
 }
 
 export default function PermissionHandler({ onPermissionsGranted }: PermissionHandlerProps) {
-  const [locationPermissionRequested, setLocationPermissionRequested] = useState(false);
-  const [notificationPermissionRequested, setNotificationPermissionRequested] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(true);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
-  const router = useRouter();
+  
+  const { 
+    requestLocationPermission, 
+    requestNotificationPermission,
+    setSkipPermissionsFlow
+  } = usePermissions();
 
-  const requestLocationPermission = async () => {
+  const handleLocationPermission = async () => {
     setShowLocationModal(false);
     
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    setLocationPermissionRequested(true);
+    const granted = await requestLocationPermission();
     
-    if (status === 'granted') {
+    if (granted) {
       // Show notification permission modal after location is granted
       setShowNotificationModal(true);
     } else {
@@ -35,36 +35,40 @@ export default function PermissionHandler({ onPermissionsGranted }: PermissionHa
     }
   };
 
-  const requestNotificationPermission = async () => {
+  const handleNotificationPermission = async () => {
     setShowNotificationModal(false);
     
-    const { status } = await Notifications.requestPermissionsAsync();
-    setNotificationPermissionRequested(true);
+    const granted = await requestNotificationPermission();
     
-    if (status !== 'granted') {
+    if (!granted) {
       Alert.alert(
         "Notification Permission",
         "You won't receive air quality alerts. You can enable notifications in your device settings.",
-        [{ text: "OK", onPress: () => onPermissionsGranted() }]
+        [{ text: "OK", onPress: () => completePermissionsFlow() }]
       );
     } else {
-      // Continue to the auth screen after permissions are handled
-      onPermissionsGranted();
+      // Continue to the next screen after permissions are handled
+      completePermissionsFlow();
     }
   };
 
   const skipNotifications = () => {
     setShowNotificationModal(false);
-    setNotificationPermissionRequested(true);
-    // Continue to the auth screen even if notifications are skipped
-    onPermissionsGranted();
+    // Continue to the next screen even if notifications are skipped
+    completePermissionsFlow();
   };
 
   const skipLocationPermission = () => {
     setShowLocationModal(false);
-    setLocationPermissionRequested(true);
     // Show notification permission even if location is skipped
     setShowNotificationModal(true);
+  };
+
+  const completePermissionsFlow = async () => {
+    // Mark permissions flow as completed
+    await setSkipPermissionsFlow(true);
+    // Navigate to the next screen
+    onPermissionsGranted();
   };
 
   return (
@@ -77,9 +81,9 @@ export default function PermissionHandler({ onPermissionsGranted }: PermissionHa
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Permission Needed</Text>
+            <Text style={styles.modalTitle}>Location Permission</Text>
             <Text style={styles.modalText}>
-              To provide you with air quality around you, allow the app to access location.
+              To provide you with air quality information around you, we need access to your location.
             </Text>
             <View style={styles.buttonContainer}>
               <Pressable 
@@ -90,7 +94,7 @@ export default function PermissionHandler({ onPermissionsGranted }: PermissionHa
               </Pressable>
               <Pressable 
                 style={[styles.button, styles.allowButton]} 
-                onPress={requestLocationPermission}
+                onPress={handleLocationPermission}
               >
                 <Text style={styles.allowButtonText}>Allow</Text>
               </Pressable>
@@ -107,9 +111,9 @@ export default function PermissionHandler({ onPermissionsGranted }: PermissionHa
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Permission Needed</Text>
+            <Text style={styles.modalTitle}>Notification Permission</Text>
             <Text style={styles.modalText}>
-              Enable Smart Alerts to stay informed! Get notified instantly when the Air Quality Index(AQI) reaches your selected category.
+              Enable Smart Alerts to stay informed! Get notified instantly when the Air Quality Index (AQI) reaches your selected category.
             </Text>
             <View style={styles.buttonContainer}>
               <Pressable 
@@ -120,25 +124,12 @@ export default function PermissionHandler({ onPermissionsGranted }: PermissionHa
               </Pressable>
               <Pressable 
                 style={[styles.button, styles.allowButton]} 
-                onPress={requestNotificationPermission}
+                onPress={handleNotificationPermission}
               >
                 <Text style={styles.allowButtonText}>Allow</Text>
               </Pressable>
             </View>
           </View>
-        </View>
-        <View style={styles.bottomButtonsContainer}>
-          <Pressable 
-            style={styles.getAlertsButton}
-            onPress={requestNotificationPermission}
-          >
-            <Text style={styles.getAlertsButtonText}>Get Smart Alerts</Text>
-          </Pressable>
-          <Pressable 
-            onPress={skipNotifications}
-          >
-            <Text style={styles.notNowText}>Not now</Text>
-          </Pressable>
         </View>
       </Modal>
     </>
@@ -201,30 +192,5 @@ const styles = StyleSheet.create({
     color: '#6366f1',
     fontSize: 16,
     fontWeight: '500',
-  },
-  bottomButtonsContainer: {
-    position: 'absolute',
-    bottom: 40,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  getAlertsButton: {
-    backgroundColor: '#8c9eff',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 30,
-    width: '80%',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  getAlertsButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  notNowText: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 16,
   },
 }); 

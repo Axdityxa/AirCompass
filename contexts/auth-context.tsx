@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearSession, SESSION_KEY, refreshSession, isSessionValid } from '@/utils/session-helper';
 
 interface AuthContextProps {
   user: User | null;
@@ -35,6 +37,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshAttempted, setRefreshAttempted] = useState(false);
+
+  // Handle refresh token errors
+  const handleRefreshError = async (error: any) => {
+    console.warn('Session refresh error:', error.message);
+    
+    // If we get a refresh token error, clear the session
+    if (error.message.includes('Refresh Token') || error.message.includes('Invalid Refresh Token')) {
+      await clearSession();
+      
+      // Reset state
+      setUser(null);
+      setSession(null);
+    }
+  };
 
   useEffect(() => {
     // Skip auth initialization during SSR on web platform
@@ -46,24 +63,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for active session on mount
     const initializeAuth = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
-        if (!error && data?.session) {
-          setSession(data.session);
-          setUser(data.session.user);
+        // First check if the session is valid
+        const valid = await isSessionValid();
+        
+        if (!valid) {
+          // Try to refresh the session
+          const refreshed = await refreshSession();
+          
+          if (!refreshed) {
+            // If refresh failed, clear the session
+            await clearSession();
+            setUser(null);
+            setSession(null);
+          }
+        } else {
+          // If session is valid, get it
+          const { data, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            await handleRefreshError(error);
+          } else if (data?.session) {
+            setSession(data.session);
+            setUser(data.session.user);
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
+        await handleRefreshError(error);
       } finally {
         setIsLoading(false);
+        setRefreshAttempted(true);
       }
     };
 
     initializeAuth();
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log('Auth state changed:', event);
+      
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
+      }
+      
+      if (event === 'SIGNED_OUT') {
+        // Clear any stored session data on sign out
+        await clearSession();
+      }
+      
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
       setIsLoading(false);
     });
 
@@ -99,7 +148,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     setIsLoading(true);
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+      }
+      
+      // Ensure we clear the user and session state regardless of API success
+      setUser(null);
+      setSession(null);
+      
+      // Clear any stored session data
+      await clearSession();
     } catch (error) {
       console.error('Error signing out:', error);
     } finally {
