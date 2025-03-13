@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/auth-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AqiPreferenceCard from '@/components/AqiPreferenceCard';
 
 export default function ProfileScreen() {
   const { user, signOut, isLoading } = useAuth();
@@ -45,7 +46,14 @@ export default function ProfileScreen() {
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="chevron-back" size={24} color="#111827" />
+          </TouchableOpacity>
           <Text style={styles.title}>Profile</Text>
+          <View style={styles.placeholder} />
         </View>
 
         <View style={styles.profileCard}>
@@ -62,9 +70,11 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        <Text style={styles.sectionTitle}>Air Quality Preference</Text>
+        <AqiPreferenceCard />
+
+        <Text style={styles.sectionTitle}>Account</Text>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="person-outline" size={24} color="#6366F1" />
             <Text style={styles.menuItemText}>Edit Profile</Text>
@@ -78,15 +88,14 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="lock-closed-outline" size={24} color="#6366F1" />
-            <Text style={styles.menuItemText}>Privacy & Security</Text>
+            <Ionicons name="location-outline" size={24} color="#6366F1" />
+            <Text style={styles.menuItemText}>Saved Locations</Text>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
         </View>
 
+        <Text style={styles.sectionTitle}>Settings</Text>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="color-palette-outline" size={24} color="#6366F1" />
             <Text style={styles.menuItemText}>Appearance</Text>
@@ -98,6 +107,12 @@ export default function ProfileScreen() {
             <Text style={styles.menuItemText}>Language</Text>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.menuItem}>
+            <Ionicons name="lock-closed-outline" size={24} color="#6366F1" />
+            <Text style={styles.menuItemText}>Privacy & Security</Text>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity 
@@ -105,6 +120,7 @@ export default function ProfileScreen() {
           onPress={handleSignOut}
           disabled={isLoading}
         >
+          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" style={styles.signOutIcon} />
           <Text style={styles.signOutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -138,12 +154,28 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 24,
   },
+  backButton: {
+    padding: 8,
+  },
+  placeholder: {
+    width: 40,
+  },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#111827',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+    marginTop: 8,
   },
   profileCard: {
     backgroundColor: '#FFFFFF',
@@ -190,12 +222,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     ...createShadow(),
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 16,
-  },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -213,8 +239,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#EF4444',
     borderRadius: 12,
     padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 24,
+  },
+  signOutIcon: {
+    marginRight: 8,
   },
   signOutButtonText: {
     color: '#FFFFFF',
