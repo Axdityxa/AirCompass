@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './auth-context';
+import { ensureUserExists } from '@/utils/user-helper';
 
 // Define the AQI category type
 export interface AqiCategory {
@@ -44,9 +45,12 @@ export function AqiPreferencesProvider({ children }: { children: React.ReactNode
 
     const fetchUserPreferences = async () => {
       try {
+        // Ensure user exists in the users table before fetching preferences
+        await ensureUserExists();
+        
         const { data, error } = await supabase
           .from('user_preferences')
-          .select('aqi_preference')
+          .select('preferred_aqi_category')
           .eq('user_id', user.id)
           .single();
 
@@ -54,7 +58,7 @@ export function AqiPreferencesProvider({ children }: { children: React.ReactNode
           console.error('Error fetching user preferences:', error);
           setHasSetPreference(false);
         } else if (data) {
-          const category = AQI_CATEGORIES.find(c => c.id === data.aqi_preference) || null;
+          const category = AQI_CATEGORIES.find(c => c.id === data.preferred_aqi_category) || null;
           setPreferredAqiCategory(category);
           setHasSetPreference(true);
         } else {
@@ -76,11 +80,14 @@ export function AqiPreferencesProvider({ children }: { children: React.ReactNode
     setIsLoading(true);
     
     try {
+      // Ensure user exists in the users table before saving preferences
+      await ensureUserExists();
+      
       const { error } = await supabase
         .from('user_preferences')
         .upsert({
           user_id: user.id,
-          aqi_preference: categoryId,
+          preferred_aqi_category: categoryId,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
         

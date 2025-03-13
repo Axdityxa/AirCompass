@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearSession, SESSION_KEY, refreshSession, isSessionValid } from '@/utils/session-helper';
+import { ensureUserExists } from '@/utils/user-helper';
 
 interface AuthContextProps {
   user: User | null;
@@ -75,6 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await clearSession();
             setUser(null);
             setSession(null);
+          } else {
+            await ensureUserExists();
           }
         } else {
           // If session is valid, get it
@@ -85,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else if (data?.session) {
             setSession(data.session);
             setUser(data.session.user);
+            await ensureUserExists();
           }
         }
       } catch (error) {
@@ -111,6 +115,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await clearSession();
       }
       
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        await ensureUserExists();
+      }
+      
       setSession(newSession);
       setUser(newSession?.user ?? null);
       setIsLoading(false);
@@ -125,6 +133,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (!error) {
+        await ensureUserExists();
+      }
+      
       return { error };
     } catch (error) {
       return { error };
@@ -137,6 +150,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
+      
+      if (!error) {
+        await ensureUserExists();
+      }
+      
       return { data, error };
     } catch (error) {
       return { data: null, error };

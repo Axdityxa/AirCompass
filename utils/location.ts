@@ -3,7 +3,7 @@ import * as Location from 'expo-location';
 export interface LocationData {
   latitude: number;
   longitude: number;
-  accuracy?: number;
+  accuracy?: number | null;
 }
 
 /**

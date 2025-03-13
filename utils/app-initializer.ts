@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { clearSession, refreshSession, isSessionValid } from './session-helper';
 import { initializeNotifications } from './notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ensureUserExists } from './user-helper';
 
 /**
  * Initializes the app by checking and refreshing the session if needed
@@ -22,7 +23,13 @@ export async function initializeApp(): Promise<void> {
       if (!refreshed) {
         // If refresh failed, clear the session
         await clearSession();
+      } else {
+        // If session was refreshed, ensure user exists
+        await ensureUserExists();
       }
+    } else {
+      // If session is valid, ensure user exists
+      await ensureUserExists();
     }
   } catch (error) {
     console.error('Error initializing app:', error);
