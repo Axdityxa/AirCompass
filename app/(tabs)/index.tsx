@@ -76,10 +76,11 @@ export default function HomeScreen() {
             style={styles.profileButton}
             onPress={() => router.push('/(tabs)/profile')}
           >
-            <Image 
-              source={require('@/assets/images/profile-pic.png')} 
-              style={styles.profilePic}
-            />
+            <View style={styles.profilePic}>
+              <Text style={styles.avatarText}>
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -196,10 +197,20 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     overflow: 'hidden',
+    backgroundColor: '#1e88e5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profilePic: {
     width: '100%',
     height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   dateContainer: {
     flexDirection: 'row',
