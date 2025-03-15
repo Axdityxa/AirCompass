@@ -114,7 +114,10 @@ export default function HomeScreen() {
         </View>
 
         {/* Preventive Measures Link */}
-        <TouchableOpacity style={styles.preventiveMeasuresLink}>
+        <TouchableOpacity 
+          style={styles.preventiveMeasuresLink}
+          onPress={() => router.push('/(tabs)/aqi-params')}
+        >
           <Text style={styles.preventiveMeasuresText}>Preventive Measures</Text>
           <Text style={styles.viewMoreText}>View more ›</Text>
         </TouchableOpacity>
