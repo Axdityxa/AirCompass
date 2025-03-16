@@ -75,6 +75,24 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="aqi-params"
+        options={{
+          title: 'AQI Parameters',
+          tabBarIcon: ({ color }) => <Ionicons name="analytics" size={24} color={color} />,
+          // Hide this tab from the tab bar since it's accessed from other screens
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="preventive-measures"
+        options={{
+          title: 'Preventive Measures',
+          tabBarIcon: ({ color }) => <Ionicons name="shield-checkmark" size={24} color={color} />,
+          // Hide this tab from the tab bar since it's accessed from other screens
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
