@@ -114,13 +114,23 @@ export default function HomeScreen() {
         </View>
 
         {/* Preventive Measures Link */}
-        <TouchableOpacity 
-          style={styles.preventiveMeasuresLink}
-          onPress={() => router.push('/(tabs)/aqi-params')}
-        >
-          <Text style={styles.preventiveMeasuresText}>Preventive Measures</Text>
-          <Text style={styles.viewMoreText}>View more ›</Text>
-        </TouchableOpacity>
+        <View style={styles.preventiveMeasuresLink}>
+          <TouchableOpacity 
+            onPress={() => {
+              router.navigate('../preventive-measures');
+            }}
+          >
+            <Text style={styles.preventiveMeasuresText}>Preventive Measures</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            onPress={() => {
+              router.navigate('../aqi-params');
+            }}
+          >
+            <Text style={styles.viewMoreText}>View more ›</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Highlights section */}
         <Text style={styles.sectionTitle}>Highlights</Text>
@@ -149,7 +159,13 @@ export default function HomeScreen() {
         </View>
 
         {/* View more link for highlights */}
-        <TouchableOpacity style={styles.viewMoreLink}>
+        <TouchableOpacity 
+          style={styles.viewMoreLink}
+          onPress={() => {
+            // Navigate to explore screen for more highlights
+            router.navigate('../explore');
+          }}
+        >
           <Text style={styles.viewMoreText}>View more ›</Text>
         </TouchableOpacity>
 

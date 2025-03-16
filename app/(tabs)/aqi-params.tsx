@@ -110,9 +110,15 @@ export default function AqiParamsScreen() {
         </View>
 
         {/* Preventive Measures Card */}
-        <TouchableOpacity style={styles.preventiveMeasuresCard}>
-          <View style={styles.preventiveIcon}>
-            <Ionicons name="shield-checkmark" size={24} color="#1e88e5" />
+        <TouchableOpacity 
+          style={styles.preventiveMeasuresCard}
+          onPress={() => {
+            // Use a relative path instead
+            router.navigate('../preventive-measures');
+          }}
+        >
+          <View style={[styles.preventiveIcon, { backgroundColor: '#E1F5FE' }]}>
+            <Ionicons name="shield-checkmark" size={24} color="#0288D1" />
           </View>
           <View style={styles.preventiveInfo}>
             <Text style={styles.preventiveTitle}>Preventive Measures</Text>
