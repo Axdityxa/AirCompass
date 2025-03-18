@@ -1,271 +1,429 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Linking,
+  ActivityIndicator,
+  RefreshControl
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAqiData } from '@/contexts/aqi-data-context';
 
 interface PreventiveMeasure {
   id: string;
   title: string;
   description: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   category: 'personal' | 'home' | 'community';
 }
 
-const MEASURES: Record<string, PreventiveMeasure[]> = {
-  personal: [
-    {
-      id: 'p1',
-      title: 'Wear a mask outdoors',
-      description: 'Use N95 or KN95 masks when AQI exceeds 150 to filter out harmful particles.',
-      icon: 'medical-outline',
-      category: 'personal',
-    },
-    {
-      id: 'p2',
-      title: 'Limit outdoor activities',
-      description: 'Reduce time spent outdoors, especially during peak pollution hours.',
-      icon: 'time-outline',
-      category: 'personal',
-    },
-    {
-      id: 'p3',
-      title: 'Stay hydrated',
-      description: 'Drink plenty of water to help your body flush out toxins.',
-      icon: 'water-outline',
-      category: 'personal',
-    },
-    {
-      id: 'p4',
-      title: 'Take supplements',
-      description: 'Consider antioxidants like Vitamin C, E, and Omega-3 fatty acids.',
-      icon: 'fitness-outline',
-      category: 'personal',
-    },
-  ],
-  home: [
-    {
-      id: 'h1',
-      title: 'Use air purifiers',
-      description: 'HEPA air purifiers can remove up to 99.97% of airborne particles.',
-      icon: 'ban-outline',
-      category: 'home',
-    },
-    {
-      id: 'h2',
-      title: 'Keep windows closed',
-      description: 'Prevent outdoor pollutants from entering your home during high AQI days.',
-      icon: 'home-outline',
-      category: 'home',
-    },
-    {
-      id: 'h3',
-      title: 'Maintain clean filters',
-      description: 'Regularly clean or replace HVAC filters to improve indoor air quality.',
-      icon: 'filter-outline',
-      category: 'home',
-    },
-    {
-      id: 'h4',
-      title: 'Use indoor plants',
-      description: 'Plants like Snake Plant and Peace Lily can help filter indoor air.',
-      icon: 'leaf-outline',
-      category: 'home',
-    },
-  ],
-  community: [
-    {
-      id: 'c1',
-      title: 'Carpool or use public transit',
-      description: 'Reduce emissions by sharing rides or using public transportation.',
-      icon: 'car-outline',
-      category: 'community',
-    },
-    {
-      id: 'c2',
-      title: 'Support clean air policies',
-      description: 'Advocate for regulations that reduce industrial and vehicle emissions.',
-      icon: 'document-text-outline',
-      category: 'community',
-    },
-    {
-      id: 'c3',
-      title: 'Plant trees',
-      description: 'Participate in community tree planting initiatives to improve air quality.',
-      icon: 'leaf-outline',
-      category: 'community',
-    },
-    {
-      id: 'c4',
-      title: 'Report pollution sources',
-      description: 'Alert local authorities about excessive smoke or pollution sources.',
-      icon: 'megaphone-outline',
-      category: 'community',
-    },
-  ],
-};
-
 export default function PreventiveMeasuresScreen() {
   const router = useRouter();
+  const { aqiData, isLoading, error, refreshAqiData } = useAqiData();
   const [activeCategory, setActiveCategory] = useState<'personal' | 'home' | 'community'>('personal');
+  const [refreshing, setRefreshing] = useState(false);
+  const [measures, setMeasures] = useState<Record<string, PreventiveMeasure[]>>({
+    personal: [],
+    home: [],
+    community: []
+  });
 
-  const categoryColors = {
-    personal: {
-      bg: '#EEF2FF',
-      icon: '#4F46E5',
-      border: '#C7D2FE',
-    },
-    home: {
-      bg: '#F0FDF4',
-      icon: '#16A34A',
-      border: '#BBF7D0',
-    },
-    community: {
-      bg: '#FDF2F8',
-      icon: '#DB2777',
-      border: '#FBCFE8',
-    },
+  // Generate preventive measures based on AQI level
+  useEffect(() => {
+    if (aqiData) {
+      const aqi = aqiData.aqi;
+      const newMeasures: Record<string, PreventiveMeasure[]> = {
+        personal: [],
+        home: [],
+        community: []
+      };
+
+      // Personal measures
+      if (aqi <= 50) {
+        // Good
+        newMeasures.personal = [
+          {
+            id: 'p1',
+            title: 'Enjoy Outdoor Activities',
+            description: 'Air quality is good. It\'s a great time for outdoor activities.',
+            icon: 'sunny',
+            category: 'personal'
+          },
+          {
+            id: 'p2',
+            title: 'Stay Hydrated',
+            description: 'Drink plenty of water when spending time outdoors.',
+            icon: 'water',
+            category: 'personal'
+          },
+          {
+            id: 'p3',
+            title: 'Regular Exercise',
+            description: 'Maintain a regular exercise routine to boost your respiratory health.',
+            icon: 'fitness',
+            category: 'personal'
+          },
+          {
+            id: 'p4',
+            title: 'Monitor Health',
+            description: 'Be aware of any changes in your respiratory health.',
+            icon: 'pulse',
+            category: 'personal'
+          }
+        ];
+      } else if (aqi <= 100) {
+        // Moderate
+        newMeasures.personal = [
+          {
+            id: 'p1',
+            title: 'Limit Prolonged Exertion',
+            description: 'Unusually sensitive people should consider reducing prolonged outdoor exertion.',
+            icon: 'time',
+            category: 'personal'
+          },
+          {
+            id: 'p2',
+            title: 'Stay Hydrated',
+            description: 'Drink plenty of water when spending time outdoors.',
+            icon: 'water',
+            category: 'personal'
+          },
+          {
+            id: 'p3',
+            title: 'Monitor Symptoms',
+            description: 'Watch for respiratory symptoms like coughing or shortness of breath.',
+            icon: 'medical',
+            category: 'personal'
+          },
+          {
+            id: 'p4',
+            title: 'Early Morning Activities',
+            description: 'Schedule outdoor activities in the early morning when air quality is better.',
+            icon: 'sunny',
+            category: 'personal'
+          }
+        ];
+      } else if (aqi <= 150) {
+        // Unhealthy for Sensitive Groups
+        newMeasures.personal = [
+          {
+            id: 'p1',
+            title: 'Wear Masks Outdoors',
+            description: 'Consider wearing N95/KN95 masks when outdoors, especially if you have respiratory conditions.',
+            icon: 'medkit',
+            category: 'personal'
+          },
+          {
+            id: 'p2',
+            title: 'Reduce Outdoor Time',
+            description: 'Limit time spent outdoors, especially during peak pollution hours.',
+            icon: 'time',
+            category: 'personal'
+          },
+          {
+            id: 'p3',
+            title: 'Take Medications',
+            description: 'Keep rescue medications handy if you have asthma or other respiratory conditions.',
+            icon: 'medical',
+            category: 'personal'
+          },
+          {
+            id: 'p4',
+            title: 'Monitor Symptoms',
+            description: 'Watch for symptoms like coughing, wheezing, or difficulty breathing.',
+            icon: 'pulse',
+            category: 'personal'
+          }
+        ];
+      } else {
+        // Unhealthy or worse
+        newMeasures.personal = [
+          {
+            id: 'p1',
+            title: 'Stay Indoors',
+            description: 'Avoid outdoor activities. Stay inside with windows and doors closed.',
+            icon: 'home',
+            category: 'personal'
+          },
+          {
+            id: 'p2',
+            title: 'Wear N95 Masks',
+            description: 'If you must go outside, wear N95/KN95 masks that can filter fine particles.',
+            icon: 'medkit',
+            category: 'personal'
+          },
+          {
+            id: 'p3',
+            title: 'Use Air Purifiers',
+            description: 'Use portable air purifiers with HEPA filters when indoors.',
+            icon: 'cloud',
+            category: 'personal'
+          },
+          {
+            id: 'p4',
+            title: 'Seek Medical Help',
+            description: 'If experiencing severe symptoms, seek medical attention immediately.',
+            icon: 'medical',
+            category: 'personal'
+          }
+        ];
+      }
+
+      // Home measures
+      if (aqi <= 100) {
+        // Good to Moderate
+        newMeasures.home = [
+          {
+            id: 'h1',
+            title: 'Natural Ventilation',
+            description: 'Open windows to allow fresh air circulation when outdoor air quality is good.',
+            icon: 'aperture',
+            category: 'home'
+          },
+          {
+            id: 'h2',
+            title: 'Regular Cleaning',
+            description: 'Dust and vacuum regularly to reduce indoor particulate matter.',
+            icon: 'brush',
+            category: 'home'
+          },
+          {
+            id: 'h3',
+            title: 'Indoor Plants',
+            description: 'Keep air-purifying plants like spider plants or peace lilies.',
+            icon: 'leaf',
+            category: 'home'
+          },
+          {
+            id: 'h4',
+            title: 'Avoid Smoking Indoors',
+            description: 'Don\'t allow smoking inside your home to maintain good indoor air quality.',
+            icon: 'close-circle',
+            category: 'home'
+          }
+        ];
+      } else {
+        // Unhealthy or worse
+        newMeasures.home = [
+          {
+            id: 'h1',
+            title: 'Keep Windows Closed',
+            description: 'Keep windows and doors closed to prevent outdoor pollutants from entering.',
+            icon: 'close',
+            category: 'home'
+          },
+          {
+            id: 'h2',
+            title: 'Use Air Purifiers',
+            description: 'Run HEPA air purifiers in main living areas to filter out pollutants.',
+            icon: 'cloud',
+            category: 'home'
+          },
+          {
+            id: 'h3',
+            title: 'Create Clean Room',
+            description: 'Designate one room with an air purifier as a clean air room for sensitive individuals.',
+            icon: 'bed',
+            category: 'home'
+          },
+          {
+            id: 'h4',
+            title: 'Avoid Pollutant Sources',
+            description: 'Don\'t burn candles, use fireplaces, or fry foods which can worsen indoor air quality.',
+            icon: 'flame',
+            category: 'home'
+          }
+        ];
+      }
+
+      // Community measures
+      newMeasures.community = [
+        {
+          id: 'c1',
+          title: 'Use Public Transport',
+          description: 'Reduce air pollution by using public transportation, carpooling, or biking.',
+          icon: 'bus',
+          category: 'community'
+        },
+        {
+          id: 'c2',
+          title: 'Plant Trees',
+          description: 'Participate in tree planting initiatives to improve air quality in your community.',
+          icon: 'leaf',
+          category: 'community'
+        },
+        {
+          id: 'c3',
+          title: 'Report Pollution',
+          description: 'Report illegal burning or excessive industrial emissions to local authorities.',
+          icon: 'alert-circle',
+          category: 'community'
+        },
+        {
+          id: 'c4',
+          title: 'Conserve Energy',
+          description: 'Reduce energy consumption to decrease power plant emissions.',
+          icon: 'flash',
+          category: 'community'
+        }
+      ];
+
+      setMeasures(newMeasures);
+    }
+  }, [aqiData]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshAqiData();
+    setRefreshing(false);
+  };
+
+  if (isLoading && !refreshing) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0288D1" />
+        <Text style={styles.loadingText}>Loading air quality data...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.errorContainer}>
+        <Ionicons name="alert-circle" size={48} color="#F44336" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={refreshAqiData}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'personal': return { light: '#E0EAFF', dark: '#4F46E5' };
+      case 'home': return { light: '#DCFCE7', dark: '#16A34A' };
+      case 'community': return { light: '#FCE7F3', dark: '#DB2777' };
+      default: return { light: '#E0EAFF', dark: '#4F46E5' };
+    }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="light" />
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color="#111827" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Preventive Measures</Text>
-        <View style={styles.profileButton}>
-          <Text style={styles.profileText}>
-            {/* First letter of user's email */}
-            A
-          </Text>
-        </View>
+        <View style={styles.placeholder} />
       </View>
-
-      {/* Subtitle */}
-      <View style={styles.subtitleContainer}>
-        <Text style={styles.subtitle}>
-          Follow these measures to maintain a better Health!!
+      
+      {/* Current AQI Info */}
+      <View style={styles.aqiInfoContainer}>
+        <Text style={styles.aqiInfoTitle}>
+          Current AQI: <Text style={styles.aqiValue}>{aqiData?.aqi || 'N/A'}</Text>
+        </Text>
+        <Text style={styles.aqiInfoSubtitle}>
+          {aqiData?.nearestStation || 'Your Location'}
         </Text>
       </View>
-
+      
       {/* Category Selector */}
-      <View style={styles.categoryContainer}>
-        <TouchableOpacity 
-          style={[
-            styles.categoryButton, 
-            { 
-              backgroundColor: activeCategory === 'personal' ? categoryColors.personal.bg : '#FFFFFF',
-              borderColor: activeCategory === 'personal' ? categoryColors.personal.border : '#E5E7EB',
-            }
-          ]}
-          onPress={() => setActiveCategory('personal')}
-        >
-          <View style={[styles.categoryIcon, { backgroundColor: categoryColors.personal.bg }]}>
-            <Ionicons name="person" size={20} color={categoryColors.personal.icon} />
-          </View>
-          <Text style={styles.categoryText}>Personal</Text>
-          <Ionicons 
-            name="chevron-down" 
-            size={16} 
-            color="#6B7280" 
-            style={styles.categoryArrow} 
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[
-            styles.categoryButton, 
-            { 
-              backgroundColor: activeCategory === 'home' ? categoryColors.home.bg : '#FFFFFF',
-              borderColor: activeCategory === 'home' ? categoryColors.home.border : '#E5E7EB',
-            }
-          ]}
-          onPress={() => setActiveCategory('home')}
-        >
-          <View style={[styles.categoryIcon, { backgroundColor: categoryColors.home.bg }]}>
-            <Ionicons name="home" size={20} color={categoryColors.home.icon} />
-          </View>
-          <Text style={styles.categoryText}>Home</Text>
-          <Ionicons 
-            name="chevron-down" 
-            size={16} 
-            color="#6B7280" 
-            style={styles.categoryArrow} 
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[
-            styles.categoryButton, 
-            { 
-              backgroundColor: activeCategory === 'community' ? categoryColors.community.bg : '#FFFFFF',
-              borderColor: activeCategory === 'community' ? categoryColors.community.border : '#E5E7EB',
-            }
-          ]}
-          onPress={() => setActiveCategory('community')}
-        >
-          <View style={[styles.categoryIcon, { backgroundColor: categoryColors.community.bg }]}>
-            <Ionicons name="people" size={20} color={categoryColors.community.icon} />
-          </View>
-          <Text style={styles.categoryText}>Community</Text>
-          <Ionicons 
-            name="chevron-down" 
-            size={16} 
-            color="#6B7280" 
-            style={styles.categoryArrow} 
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Measures List */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.measuresList}>
-          {MEASURES[activeCategory].map((measure) => (
-            <TouchableOpacity 
-              key={measure.id}
-              style={styles.measureCard}
-              onPress={() => {
-                // Handle measure details view
-                console.log(`Show details for ${measure.title}`);
-              }}
+      <View style={styles.categorySelector}>
+        {['personal', 'home', 'community'].map((category) => {
+          const isActive = activeCategory === category;
+          const colors = getCategoryColor(category);
+          
+          return (
+            <TouchableOpacity
+              key={category}
+              style={[
+                styles.categoryButton,
+                isActive && { backgroundColor: colors.light }
+              ]}
+              onPress={() => setActiveCategory(category as 'personal' | 'home' | 'community')}
             >
-              <View style={[
-                styles.measureIcon, 
-                { backgroundColor: categoryColors[measure.category].bg }
-              ]}>
-                <Ionicons 
-                  name={measure.icon} 
-                  size={24} 
-                  color={categoryColors[measure.category].icon} 
-                />
-              </View>
-              <View style={styles.measureInfo}>
-                <Text style={styles.measureTitle}>{measure.title}</Text>
-                <Text style={styles.measureDescription}>{measure.description}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+              <Ionicons
+                name={
+                  category === 'personal' ? 'person' :
+                  category === 'home' ? 'home' : 'people'
+                }
+                size={20}
+                color={isActive ? colors.dark : '#6B7280'}
+              />
+              <Text
+                style={[
+                  styles.categoryText,
+                  isActive && { color: colors.dark, fontWeight: '600' }
+                ]}
+              >
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </Text>
             </TouchableOpacity>
-          ))}
+          );
+        })}
+      </View>
+      
+      <ScrollView 
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Measures List */}
+        <View style={styles.measuresList}>
+          {measures[activeCategory].map((measure) => {
+            const colors = getCategoryColor(activeCategory);
+            
+            return (
+              <TouchableOpacity key={measure.id} style={styles.measureCard}>
+                <View style={[styles.measureIcon, { backgroundColor: colors.light }]}>
+                  <Ionicons name={measure.icon as any} size={24} color={colors.dark} />
+                </View>
+                <View style={styles.measureContent}>
+                  <Text style={styles.measureTitle}>{measure.title}</Text>
+                  <Text style={styles.measureDescription}>{measure.description}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-
+        
         {/* Additional Resources */}
         <View style={styles.resourcesContainer}>
           <Text style={styles.resourcesTitle}>Additional Resources</Text>
-          <TouchableOpacity style={styles.resourceCard}>
-            <Ionicons name="document-text-outline" size={24} color="#1e88e5" />
-            <Text style={styles.resourceText}>WHO Air Quality Guidelines</Text>
+          
+          <TouchableOpacity
+            style={styles.resourceLink}
+            onPress={() => Linking.openURL('https://www.who.int/health-topics/air-pollution')}
+          >
+            <Ionicons name="globe-outline" size={20} color="#0288D1" />
+            <Text style={styles.resourceLinkText}>WHO Air Pollution Guidelines</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.resourceCard}>
-            <Ionicons name="videocam-outline" size={24} color="#1e88e5" />
-            <Text style={styles.resourceText}>Video: How to Use Air Purifiers</Text>
+          
+          <TouchableOpacity
+            style={styles.resourceLink}
+            onPress={() => Linking.openURL('https://www.airnow.gov/aqi/aqi-basics/')}
+          >
+            <Ionicons name="information-circle-outline" size={20} color="#0288D1" />
+            <Text style={styles.resourceLinkText}>Understanding AQI Levels</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.resourceLink}
+            onPress={() => Linking.openURL('https://www.youtube.com/watch?v=MU-dYX_Iy9I')}
+          >
+            <Ionicons name="videocam-outline" size={20} color="#0288D1" />
+            <Text style={styles.resourceLinkText}>Video: How to Protect Yourself from Air Pollution</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -278,154 +436,182 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F7FA',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#0288D1',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F7FA',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#F44336',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#0288D1',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#0288D1',
   },
   backButton: {
-    padding: 4,
+    padding: 8,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: '#fff',
   },
-  profileButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#EC4899',
-    justifyContent: 'center',
-    alignItems: 'center',
+  placeholder: {
+    width: 40,
   },
-  profileText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  subtitleContainer: {
+  aqiInfoContainer: {
+    backgroundColor: '#fff',
     padding: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
-    backgroundColor: '#FFFFFF',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#4B5563',
-    textAlign: 'center',
-  },
-  categoryContainer: {
-    padding: 16,
-    paddingTop: 8,
-    gap: 12,
-  },
-  categoryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 16,
     borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
-  categoryIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    justifyContent: 'center',
+  aqiInfoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  aqiValue: {
+    color: '#0288D1',
+  },
+  aqiInfoSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  categorySelector: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    overflow: 'hidden',
+  },
+  categoryButton: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
   },
   categoryText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    marginLeft: 12,
+    fontSize: 14,
+    color: '#6B7280',
+    marginLeft: 4,
   },
-  categoryArrow: {
-    marginLeft: 8,
-  },
-  content: {
+  scrollView: {
     flex: 1,
   },
   measuresList: {
-    padding: 16,
-    paddingTop: 8,
+    marginHorizontal: 16,
+    marginTop: 16,
   },
   measureCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: '#fff',
     padding: 16,
+    borderRadius: 12,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 15,
-    elevation: 2,
+    shadowRadius: 2,
+    elevation: 1,
   },
   measureIcon: {
     width: 48,
     height: 48,
-    borderRadius: 10,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 16,
   },
-  measureInfo: {
+  measureContent: {
     flex: 1,
-    marginLeft: 16,
-    marginRight: 8,
   },
   measureTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
+    color: '#1F2937',
   },
   measureDescription: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#6B7280',
-    lineHeight: 18,
+    marginTop: 4,
+    lineHeight: 20,
   },
   resourcesContainer: {
-    padding: 16,
-    paddingTop: 8,
+    marginHorizontal: 16,
+    marginTop: 24,
     marginBottom: 24,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   resourcesTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1F2937',
     marginBottom: 12,
   },
-  resourceCard: {
+  resourceLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 15,
-    elevation: 2,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
-  resourceText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#111827',
-    marginLeft: 16,
+  resourceLinkText: {
+    fontSize: 14,
+    color: '#0288D1',
+    marginLeft: 8,
   },
 }); 

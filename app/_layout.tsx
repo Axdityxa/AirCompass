@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
+import { Stack, useRouter, useSegments, usePathname, ErrorBoundary } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -9,14 +9,21 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as WebBrowser from 'expo-web-browser';
+import { useAuthRequest } from 'expo-auth-session';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { AqiPreferencesProvider, useAqiPreferences } from '@/contexts/aqi-preferences-context';
 import { PermissionsProvider, usePermissions } from '@/contexts/permissions-context';
+import { AqiDataProvider } from '@/contexts/aqi-data-context';
 import { initializeApp } from '@/utils/app-initializer';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+// Initialize web browser for OAuth
+WebBrowser.maybeCompleteAuthSession();
+
+// Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 // This function ensures users are redirected to the right screen based on auth state
@@ -119,27 +126,20 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
+  const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    ...FontAwesome.font,
   });
 
+  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
-    // Initialize the app when it loads
-    const init = async () => {
-      try {
-        // Initialize the app and handle any token refresh issues
-        await initializeApp();
-      } catch (error) {
-        console.error('Error during app initialization:', error);
-      } finally {
-        // Hide the splash screen once initialization is complete
-        if (loaded) {
-          SplashScreen.hideAsync();
-        }
-      }
-    };
+    if (error) throw error;
+  }, [error]);
 
-    init();
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
+    }
   }, [loaded]);
 
   if (!loaded) {
@@ -152,7 +152,9 @@ export default function RootLayout() {
         <PermissionsProvider>
           <AuthProvider>
             <AqiPreferencesProvider>
-              <RootLayoutNav />
+              <AqiDataProvider>
+                <RootLayoutNav />
+              </AqiDataProvider>
             </AqiPreferencesProvider>
           </AuthProvider>
         </PermissionsProvider>
@@ -166,3 +168,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
+export {
+  // Catch any errors thrown by the Layout component.
+  ErrorBoundary,
+};
+
+export const unstable_settings = {
+  // Ensure that reloading on certain routes works correctly.
+  initialRouteName: '(tabs)',
+};

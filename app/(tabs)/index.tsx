@@ -11,12 +11,14 @@ import { usePermissions } from '@/contexts/permissions-context';
 import { getCurrentLocation, getFormattedAddress } from '@/utils/location';
 import { LocationData } from '@/utils/location';
 import AqiPreferenceCard from '@/components/AqiPreferenceCard';
+import { useAqiData } from '@/contexts/aqi-data-context';
 
 export default function HomeScreen() {
   const { user } = useAuth();
   const { preferredAqiCategory } = useAqiPreferences();
   const { hasLocationPermission } = usePermissions();
   const router = useRouter();
+  const { aqiData, isLoading, error } = useAqiData();
   
   const [location, setLocation] = useState<LocationData | null>(null);
   const [address, setAddress] = useState<string>('');
@@ -55,11 +57,26 @@ export default function HomeScreen() {
     fetchLocation();
   }, [hasLocationPermission]);
 
-  // Mock AQI data (replace with actual API call)
-  const mockAqiValue = 50;
-  const mockAqiCategory = {
-    name: 'Good',
-    color: '#4CAF50',
+  // Function to get color based on AQI value
+  const getAqiColor = (aqi: number | null): string => {
+    if (aqi === null) return '#9CA3AF'; // Gray for null values
+    if (aqi <= 50) return '#4CAF50'; // Good - Green
+    if (aqi <= 100) return '#FFEB3B'; // Moderate - Yellow
+    if (aqi <= 150) return '#FF9800'; // Unhealthy for Sensitive Groups - Orange
+    if (aqi <= 200) return '#F44336'; // Unhealthy - Red
+    if (aqi <= 300) return '#9C27B0'; // Very Unhealthy - Purple
+    return '#7D0023'; // Hazardous - Maroon
+  };
+
+  // Function to get AQI category text
+  const getAqiCategory = (aqi: number | null): string => {
+    if (aqi === null) return 'Unknown';
+    if (aqi <= 50) return 'Good';
+    if (aqi <= 100) return 'Moderate';
+    if (aqi <= 150) return 'Unhealthy for Sensitive Groups';
+    if (aqi <= 200) return 'Unhealthy';
+    if (aqi <= 300) return 'Very Unhealthy';
+    return 'Hazardous';
   };
 
   return (
@@ -95,21 +112,18 @@ export default function HomeScreen() {
         
         {/* AQI Card */}
         <View style={styles.aqiCard}>
-          <View style={styles.aqiInfo}>
+          <View style={styles.aqiCardLeft}>
             <Text style={styles.aqiLabel}>AQI Value</Text>
             <Text style={styles.locationText}>
               {isLoadingLocation ? 'Loading location...' : (address || 'Location unavailable')}
             </Text>
+            <TouchableOpacity onPress={() => router.navigate('../aqi-params')}>
+              <Text style={styles.viewDetailsText}>View details</Text>
+            </TouchableOpacity>
           </View>
-          <View style={[styles.aqiValueContainer, { backgroundColor: mockAqiCategory.color }]}>
-            {isLoadingLocation ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <Text style={styles.aqiValue}>{mockAqiValue}</Text>
-                <Text style={styles.aqiCategoryText}>{mockAqiCategory.name}</Text>
-              </>
-            )}
+          
+          <View style={[styles.aqiValueContainer, { backgroundColor: getAqiColor(aqiData?.aqi || null) }]}>
+            <Text style={styles.aqiValue}>{aqiData?.aqi || '--'}</Text>
           </View>
         </View>
 
@@ -254,6 +268,7 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -261,21 +276,26 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 2,
   },
-  aqiInfo: {
+  aqiCardLeft: {
     flex: 1,
   },
   aqiLabel: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#111827',
     marginBottom: 4,
   },
   locationText: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  viewDetailsText: {
+    fontSize: 14,
+    color: '#6366F1',
   },
   aqiValueContainer: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#FFEB3B',
     borderRadius: 8,
     width: 80,
     height: 80,
@@ -283,15 +303,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   aqiValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  aqiCategoryText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '500',
   },
   preventiveMeasuresLink: {
     flexDirection: 'row',

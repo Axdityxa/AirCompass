@@ -5,6 +5,10 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearSession, SESSION_KEY, refreshSession, isSessionValid } from '@/utils/session-helper';
 import { ensureUserExists } from '@/utils/user-helper';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+import * as Crypto from 'expo-crypto';
+import Constants from 'expo-constants';
 
 interface AuthContextProps {
   user: User | null;
@@ -21,8 +25,15 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 // Helper function to get redirect URL safely
 const getRedirectUrl = (path: string) => {
+  // For mobile, use deep linking with the scheme from app.json
   if (Platform.OS !== 'web') {
-    return `aircompass://auth/${path}`;
+    const redirectUri = makeRedirectUri({
+      scheme: 'aircompass',
+      path: path,
+      preferLocalhost: false,
+    });
+    console.log('Mobile redirect URI:', redirectUri);
+    return redirectUri;
   }
   
   // For web, check if window is defined (for SSR)
@@ -186,12 +197,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const googleSignIn = async () => {
     try {
-      await supabase.auth.signInWithOAuth({
+      // Generate a random state for security
+      const state = Crypto.randomUUID();
+      
+      // Get the appropriate redirect URL for the platform
+      const redirectUrl = getRedirectUrl('callback');
+      console.log('Using redirect URL:', redirectUrl);
+      
+      // Start the OAuth flow
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: getRedirectUrl('callback'),
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
         },
       });
+      
+      if (error) {
+        console.error('Error starting Google sign in:', error);
+        return;
+      }
+      
+      if (data?.url) {
+        // Save the state to verify later
+        await AsyncStorage.setItem('oauth_state', state);
+        
+        // Open the URL in a browser session
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url,
+          redirectUrl,
+          {
+            showInRecents: true,
+            createTask: true,
+          }
+        );
+        
+        if (result.type === 'success') {
+          // The redirect happened and we're back in the app
+          const { url } = result;
+          console.log('Auth successful, redirected to:', url);
+        } else {
+          console.log('Auth session result:', result.type);
+        }
+      }
     } catch (error) {
       console.error('Error with Google sign in:', error);
     }

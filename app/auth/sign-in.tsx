@@ -12,28 +12,54 @@ import {
   Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter, Link } from 'expo-router';
+import { Link, Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/auth-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Colors from '@/constants/Colors';
+import { isValidEmail } from '@/utils/validation';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const { signIn, googleSignIn, isLoading } = useAuth();
-  const router = useRouter();
 
-  const handleSignIn = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
+  const validateInputs = () => {
+    let isValid = true;
+
+    if (!email.trim()) {
+      setEmailError('Email is required');
+      isValid = false;
+    } else if (!isValidEmail(email)) {
+      setEmailError('Please enter a valid email');
+      isValid = false;
+    } else {
+      setEmailError('');
     }
 
+    if (!password) {
+      setPasswordError('Password is required');
+      isValid = false;
+    } else if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      isValid = false;
+    } else {
+      setPasswordError('');
+    }
+
+    return isValid;
+  };
+
+  const handleSignIn = async () => {
+    if (!validateInputs()) return;
+
     const { error } = await signIn(email, password);
-    
     if (error) {
-      Alert.alert('Error', error.message);
+      Alert.alert('Sign In Failed', error.message || 'Please check your credentials and try again');
     } else {
       router.replace('/(tabs)');
     }
@@ -41,15 +67,20 @@ export default function SignInScreen() {
 
   const handleGoogleSignIn = async () => {
     try {
+      setIsGoogleLoading(true);
       await googleSignIn();
     } catch (error) {
-      Alert.alert('Error', 'Failed to sign in with Google');
+      Alert.alert('Google Sign In Failed', 'An error occurred during Google sign in');
+      console.error('Google sign in error:', error);
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
+      <Stack.Screen options={{ title: 'Sign In', headerShown: false }} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
@@ -64,36 +95,42 @@ export default function SignInScreen() {
         </View>
 
         <View style={styles.formContainer}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-
-          <Text style={styles.label}>Password</Text>
-          <View style={styles.passwordContainer}>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.passwordInput}
-              placeholder="Enter password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
+              style={[styles.input, emailError ? styles.inputError : null]}
+              placeholder="Enter email"
+              value={email}
+              onChangeText={setEmail}
               autoCapitalize="none"
+              keyboardType="email-address"
             />
-            <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <Ionicons
-                name={showPassword ? 'eye-off' : 'eye'}
-                size={24}
-                color="#888"
+            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[styles.passwordInput, passwordError ? styles.inputError : null]}
+                placeholder="Enter password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
               />
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={24}
+                  color="#888"
+                />
+              </TouchableOpacity>
+            </View>
+            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
           </View>
 
           <TouchableOpacity style={styles.forgotPasswordContainer}>
@@ -123,12 +160,19 @@ export default function SignInScreen() {
           <TouchableOpacity
             style={styles.googleButton}
             onPress={handleGoogleSignIn}
-            disabled={isLoading}
+            disabled={isGoogleLoading}
           >
-            <Image
-              source={require('@/assets/images/google-icon.png')}
-              style={styles.googleIcon}
-            />
+            {isGoogleLoading ? (
+              <ActivityIndicator color="#4285F4" />
+            ) : (
+              <View style={styles.googleButtonContent}>
+                <Image
+                  source={require('@/assets/images/google-icon.png')}
+                  style={styles.googleIcon}
+                />
+                <Text style={styles.googleButtonText}>Sign in with Google</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -243,9 +287,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   googleIcon: {
     width: 24,
     height: 24,
+    marginRight: 12,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
   },
   signUpContainer: {
     flexDirection: 'row',
@@ -260,5 +315,16 @@ const styles = StyleSheet.create({
     color: '#6366F1',
     fontSize: 14,
     fontWeight: '600',
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  inputError: {
+    borderColor: 'red',
+  },
+  errorText: {
+    color: 'red',
+    marginTop: 5,
+    fontSize: 12,
   },
 }); 

@@ -6,7 +6,13 @@
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
-export const Colors = {
+export default {
+  primary: '#6366F1',
+  secondary: '#1e88e5',
+  success: '#4CAF50',
+  warning: '#FFEB3B',
+  danger: '#F44336',
+  info: '#2196F3',
   light: {
     text: '#11181C',
     background: '#fff',

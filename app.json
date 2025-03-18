@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "aircompass",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,6 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.aircompass",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We need your location to provide accurate air quality data for your area.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to provide accurate air quality data for your area.",
@@ -22,6 +23,7 @@
       }
     },
     "android": {
+      "package": "com.yourcompany.aircompass",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#b3c7ff"
