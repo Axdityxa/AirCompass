@@ -16,6 +16,7 @@ import { useAuthRequest } from 'expo-auth-session';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { AqiPreferencesProvider, useAqiPreferences } from '@/contexts/aqi-preferences-context';
+import { HealthConditionsProvider, useHealthConditions } from '@/contexts/health-conditions-context';
 import { PermissionsProvider, usePermissions } from '@/contexts/permissions-context';
 import { AqiDataProvider } from '@/contexts/aqi-data-context';
 import { initializeApp } from '@/utils/app-initializer';
@@ -30,6 +31,7 @@ SplashScreen.preventAutoHideAsync();
 function RootLayoutNav() {
   const { user, isLoading: authLoading } = useAuth();
   const { hasSetPreference, isLoading: preferencesLoading } = useAqiPreferences();
+  const { hasSetHealthConditions, isLoading: healthConditionsLoading } = useHealthConditions();
   const { 
     skipPermissionsFlow, 
     hasLocationPermission, 
@@ -41,7 +43,7 @@ function RootLayoutNav() {
   const router = useRouter();
 
   useEffect(() => {
-    if (authLoading || preferencesLoading || permissionsLoading) return;
+    if (authLoading || preferencesLoading || permissionsLoading || healthConditionsLoading) return;
 
     const checkNavigation = async () => {
       // Check if we're on the launch screen (root index)
@@ -59,6 +61,9 @@ function RootLayoutNav() {
       // Check if we're on the select-air screen
       const isSelectAirScreen = segments.length > 1 && segments[1] === 'select-air';
 
+      // Check if we're on the health-conditions screen
+      const isHealthConditionsScreen = segments.length > 1 && segments[1] === 'health-conditions';
+
       // Check if user has pressed the continue button on launch screen
       const hasStartedApp = await AsyncStorage.getItem('hasStartedApp');
 
@@ -73,10 +78,12 @@ function RootLayoutNav() {
           router.replace('/auth/sign-in');
         }
       } else if (inAuthGroup) {
-        // If user is authenticated and on an auth screen, redirect to main app or select-air
+        // If user is authenticated and on an auth screen, check if they need to set preferences or health conditions
         if (user) {
           if (!hasSetPreference) {
             router.replace('/(tabs)/select-air');
+          } else if (!hasSetHealthConditions) {
+            router.replace('/(tabs)/health-conditions');
           } else {
             router.replace('/(tabs)');
           }
@@ -86,6 +93,12 @@ function RootLayoutNav() {
         // unless they're already on the select-air screen
         if (user && !hasSetPreference && !isSelectAirScreen) {
           router.replace('/(tabs)/select-air');
+        }
+        
+        // If user has set preferences but hasn't set health conditions, redirect to health-conditions
+        // unless they're already on the health-conditions screen
+        if (user && hasSetPreference && !hasSetHealthConditions && !isHealthConditionsScreen) {
+          router.replace('/(tabs)/health-conditions');
         }
         
         // If user is not authenticated and trying to access protected tabs, redirect to auth
@@ -102,8 +115,10 @@ function RootLayoutNav() {
     pathname,
     authLoading, 
     preferencesLoading, 
+    healthConditionsLoading,
     permissionsLoading,
     hasSetPreference, 
+    hasSetHealthConditions,
     skipPermissionsFlow, 
     hasLocationPermission, 
     hasNotificationPermission
@@ -152,9 +167,11 @@ export default function RootLayout() {
         <PermissionsProvider>
           <AuthProvider>
             <AqiPreferencesProvider>
-              <AqiDataProvider>
-                <RootLayoutNav />
-              </AqiDataProvider>
+              <HealthConditionsProvider>
+                <AqiDataProvider>
+                  <RootLayoutNav />
+                </AqiDataProvider>
+              </HealthConditionsProvider>
             </AqiPreferencesProvider>
           </AuthProvider>
         </PermissionsProvider>

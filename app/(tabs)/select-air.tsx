@@ -36,8 +36,8 @@ export default function SelectAirScreen() {
     
     await savePreference(selectedCategory);
     
-    // Navigate to the main dashboard
-    router.replace('/(tabs)');
+    // Navigate to the health conditions screen
+    router.replace('/(tabs)/health-conditions');
   };
 
   return (

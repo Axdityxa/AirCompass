@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/auth-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AqiPreferenceCard from '@/components/AqiPreferenceCard';
+import HealthConditionsCard from '@/components/HealthConditionsCard';
 
 export default function ProfileScreen() {
   const { user, signOut, isLoading } = useAuth();
@@ -72,6 +73,9 @@ export default function ProfileScreen() {
 
         <Text style={styles.sectionTitle}>Air Quality Preference</Text>
         <AqiPreferenceCard />
+        
+        <Text style={styles.sectionTitle}>Health Conditions</Text>
+        <HealthConditionsCard />
 
         <Text style={styles.sectionTitle}>Account</Text>
         <View style={styles.section}>
