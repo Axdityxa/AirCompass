@@ -162,11 +162,6 @@ export default function AqiParamsScreen() {
               strokeWidth={15}
             />
           </View>
-          
-          <View style={styles.confidenceContainer}>
-            <Text style={styles.confidenceLabel}>Confidence:</Text>
-            <Text style={styles.confidenceValue}>{aqiData?.confidence || 'Low'}</Text>
-          </View>
         </View>
         
         {/* Parameters */}
