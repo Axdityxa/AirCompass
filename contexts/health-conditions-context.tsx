@@ -8,13 +8,15 @@ export interface HealthConditions {
   hasRespiratoryIssues: boolean;
   hasCardiovascularDisease: boolean;
   hasCancerRisk: boolean;
+  otherConditions: string | null;
 }
 
 interface HealthConditionsContextProps {
   healthConditions: HealthConditions | null;
   isLoading: boolean;
-  saveHealthConditions: (conditions: HealthConditions) => Promise<void>;
+  saveHealthConditions: (conditions: HealthConditions, hasExplicitlySet?: boolean) => Promise<void>;
   hasSetHealthConditions: boolean;
+  hasExplicitlySetConditions: boolean;
 }
 
 const HealthConditionsContext = createContext<HealthConditionsContextProps | undefined>(undefined);
@@ -23,6 +25,7 @@ export function HealthConditionsProvider({ children }: { children: React.ReactNo
   const [healthConditions, setHealthConditions] = useState<HealthConditions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasSetHealthConditions, setHasSetHealthConditions] = useState(false);
+  const [hasExplicitlySetConditions, setHasExplicitlySetConditions] = useState(false);
   const { user } = useAuth();
   const { preferredAqiCategory } = useAqiPreferences();
 
@@ -39,27 +42,38 @@ export function HealthConditionsProvider({ children }: { children: React.ReactNo
         
         const { data, error } = await supabase
           .from('user_preferences')
-          .select('has_respiratory_issues, has_cardiovascular_disease, has_cancer_risk')
+          .select('has_respiratory_issues, has_cardiovascular_disease, has_cancer_risk, other_health_conditions, has_explicitly_set_conditions')
           .eq('user_id', user.id)
           .single();
 
         if (error) {
           console.error('Error fetching health conditions:', error);
           setHasSetHealthConditions(false);
+          setHasExplicitlySetConditions(false);
         } else if (data) {
           const conditions: HealthConditions = {
             hasRespiratoryIssues: data.has_respiratory_issues || false,
             hasCardiovascularDisease: data.has_cardiovascular_disease || false,
-            hasCancerRisk: data.has_cancer_risk || false
+            hasCancerRisk: data.has_cancer_risk || false,
+            otherConditions: data.other_health_conditions || null
           };
           
           setHealthConditions(conditions);
           
+          // Check if user has explicitly set conditions
+          setHasExplicitlySetConditions(data.has_explicitly_set_conditions || false);
+          
           // Check if any health condition has been set
-          const hasAnyCondition = Object.values(conditions).some(value => value === true);
+          const hasAnyCondition = Object.values({
+            hasRespiratoryIssues: conditions.hasRespiratoryIssues,
+            hasCardiovascularDisease: conditions.hasCardiovascularDisease,
+            hasCancerRisk: conditions.hasCancerRisk
+          }).some(value => value === true) || !!conditions.otherConditions;
+          
           setHasSetHealthConditions(hasAnyCondition);
         } else {
           setHasSetHealthConditions(false);
+          setHasExplicitlySetConditions(false);
         }
       } catch (error) {
         console.error('Error fetching health conditions:', error);
@@ -71,7 +85,7 @@ export function HealthConditionsProvider({ children }: { children: React.ReactNo
     fetchHealthConditions();
   }, [user]);
 
-  const saveHealthConditions = async (conditions: HealthConditions) => {
+  const saveHealthConditions = async (conditions: HealthConditions, hasExplicitlySet: boolean = true) => {
     if (!user) return;
     
     setIsLoading(true);
@@ -104,6 +118,8 @@ export function HealthConditionsProvider({ children }: { children: React.ReactNo
           has_respiratory_issues: conditions.hasRespiratoryIssues,
           has_cardiovascular_disease: conditions.hasCardiovascularDisease,
           has_cancer_risk: conditions.hasCancerRisk,
+          other_health_conditions: conditions.otherConditions,
+          has_explicitly_set_conditions: hasExplicitlySet,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
         
@@ -111,7 +127,15 @@ export function HealthConditionsProvider({ children }: { children: React.ReactNo
         console.error('Error saving health conditions:', error);
       } else {
         setHealthConditions(conditions);
-        setHasSetHealthConditions(true);
+        setHasExplicitlySetConditions(hasExplicitlySet);
+        
+        // Check if any condition is set
+        const hasAnyCondition = conditions.hasRespiratoryIssues || 
+                               conditions.hasCardiovascularDisease || 
+                               conditions.hasCancerRisk || 
+                               !!conditions.otherConditions;
+        
+        setHasSetHealthConditions(hasAnyCondition);
       }
     } catch (error) {
       console.error('Error saving health conditions:', error);
@@ -125,6 +149,7 @@ export function HealthConditionsProvider({ children }: { children: React.ReactNo
     isLoading,
     saveHealthConditions,
     hasSetHealthConditions,
+    hasExplicitlySetConditions,
   };
 
   return <HealthConditionsContext.Provider value={value}>{children}</HealthConditionsContext.Provider>;

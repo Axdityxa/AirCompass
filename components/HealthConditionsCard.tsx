@@ -29,19 +29,31 @@ export default function HealthConditionsCard({
   };
 
   // Get count of active conditions
-  const activeConditionsCount = Object.values(healthConditions).filter(value => value === true).length;
+  const standardConditionsCount = 
+    (healthConditions.hasRespiratoryIssues ? 1 : 0) +
+    (healthConditions.hasCardiovascularDisease ? 1 : 0) +
+    (healthConditions.hasCancerRisk ? 1 : 0);
+  
+  const hasOtherCondition = !!healthConditions.otherConditions;
+  const activeConditionsCount = standardConditionsCount + (hasOtherCondition ? 1 : 0);
   
   // Get list of active condition names
   const activeConditions = [];
   if (healthConditions.hasRespiratoryIssues) activeConditions.push('Respiratory Issues');
   if (healthConditions.hasCardiovascularDisease) activeConditions.push('Cardiovascular Disease');
   if (healthConditions.hasCancerRisk) activeConditions.push('Cancer Risk');
+  if (hasOtherCondition) activeConditions.push('Other Conditions');
 
   // Create a description based on the active conditions
   let description = 'No health conditions selected.';
   if (activeConditionsCount > 0) {
     description = 'You have indicated that you have the following health conditions that may be affected by air quality: ' + 
       activeConditions.join(', ') + '.';
+    
+    // Add other conditions details if present
+    if (hasOtherCondition) {
+      description += ` Your other condition(s): ${healthConditions.otherConditions}.`;
+    }
   }
 
   return (

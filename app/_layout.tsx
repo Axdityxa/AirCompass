@@ -31,7 +31,7 @@ SplashScreen.preventAutoHideAsync();
 function RootLayoutNav() {
   const { user, isLoading: authLoading } = useAuth();
   const { hasSetPreference, isLoading: preferencesLoading } = useAqiPreferences();
-  const { hasSetHealthConditions, isLoading: healthConditionsLoading } = useHealthConditions();
+  const { hasSetHealthConditions, hasExplicitlySetConditions, isLoading: healthConditionsLoading } = useHealthConditions();
   const { 
     skipPermissionsFlow, 
     hasLocationPermission, 
@@ -82,7 +82,7 @@ function RootLayoutNav() {
         if (user) {
           if (!hasSetPreference) {
             router.replace('/(tabs)/select-air');
-          } else if (!hasSetHealthConditions) {
+          } else if (!hasExplicitlySetConditions) {
             router.replace('/(tabs)/health-conditions');
           } else {
             router.replace('/(tabs)');
@@ -97,7 +97,7 @@ function RootLayoutNav() {
         
         // If user has set preferences but hasn't set health conditions, redirect to health-conditions
         // unless they're already on the health-conditions screen
-        if (user && hasSetPreference && !hasSetHealthConditions && !isHealthConditionsScreen) {
+        if (user && hasSetPreference && !hasExplicitlySetConditions && !isHealthConditionsScreen) {
           router.replace('/(tabs)/health-conditions');
         }
         
@@ -119,6 +119,7 @@ function RootLayoutNav() {
     permissionsLoading,
     hasSetPreference, 
     hasSetHealthConditions,
+    hasExplicitlySetConditions,
     skipPermissionsFlow, 
     hasLocationPermission, 
     hasNotificationPermission
