@@ -76,6 +76,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="health-conditions"
+        options={{
+          title: 'Health Conditions',
+          tabBarIcon: ({ color }) => <Ionicons name="medical" size={24} color={color} />,
+          // Hide this tab from the tab bar but keep it accessible for the app flow
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="aqi-params"
         options={{
           title: 'AQI Parameters',

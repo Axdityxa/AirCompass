@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   Switch,
+  TextInput,
 } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
@@ -49,6 +50,7 @@ export default function HealthConditionsScreen() {
     cardiovascular: false,
     cancer: false,
   });
+  const [otherConditions, setOtherConditions] = useState<string>('');
   
   const { saveHealthConditions, isLoading, healthConditions } = useHealthConditions();
   const router = useRouter();
@@ -61,6 +63,7 @@ export default function HealthConditionsScreen() {
         cardiovascular: healthConditions.hasCardiovascularDisease,
         cancer: healthConditions.hasCancerRisk,
       });
+      setOtherConditions(healthConditions.otherConditions || '');
     }
   }, [healthConditions]);
 
@@ -76,13 +79,26 @@ export default function HealthConditionsScreen() {
       hasRespiratoryIssues: selectedConditions.respiratory,
       hasCardiovascularDisease: selectedConditions.cardiovascular,
       hasCancerRisk: selectedConditions.cancer,
-    });
+      otherConditions: otherConditions.trim() || null,
+    }, true); // Set explicitly that user has completed this step
     
     // Navigate to the main dashboard
     router.replace('/(tabs)');
   };
 
-  const hasAnyCondition = Object.values(selectedConditions).some(Boolean);
+  const handleNoConditions = async () => {
+    await saveHealthConditions({
+      hasRespiratoryIssues: false,
+      hasCardiovascularDisease: false,
+      hasCancerRisk: false,
+      otherConditions: null,
+    }, true); // Set explicitly that user has completed this step
+    
+    // Navigate to the main dashboard
+    router.replace('/(tabs)');
+  };
+
+  const hasAnyCondition = Object.values(selectedConditions).some(Boolean) || !!otherConditions.trim();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -122,6 +138,23 @@ export default function HealthConditionsScreen() {
             </View>
           ))}
           
+          {/* Other conditions text input */}
+          <View style={styles.otherConditionsContainer}>
+            <View style={styles.otherHeaderContainer}>
+              <Ionicons name="add-circle-outline" size={24} color="#6366F1" style={styles.otherIcon} />
+              <Text style={styles.otherHeader}>Other Conditions</Text>
+            </View>
+            <TextInput
+              style={styles.otherInput}
+              placeholder="Enter any other health conditions here"
+              placeholderTextColor="#9CA3AF"
+              value={otherConditions}
+              onChangeText={setOtherConditions}
+              multiline
+              numberOfLines={2}
+            />
+          </View>
+          
           <View style={styles.infoBox}>
             <Ionicons name="information-circle-outline" size={20} color="#6B7280" style={styles.infoIcon} />
             <Text style={styles.infoText}>
@@ -139,7 +172,20 @@ export default function HealthConditionsScreen() {
           disabled={isLoading}
         >
           <Text style={styles.continueButtonText}>
-            {isLoading ? 'Saving...' : hasAnyCondition ? 'Continue' : 'Skip'}
+            {isLoading ? 'Saving...' : 'Continue'}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[
+            styles.noConditionsButton,
+            isLoading && styles.disabledButton
+          ]}
+          onPress={handleNoConditions}
+          disabled={isLoading}
+        >
+          <Text style={styles.noConditionsText}>
+            I don't have any health conditions
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -225,6 +271,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
+  otherConditionsContainer: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 16,
+  },
+  otherHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  otherIcon: {
+    marginRight: 8,
+  },
+  otherHeader: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  otherInput: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: '#111827',
+    textAlignVertical: 'top',
+    minHeight: 80,
+  },
   infoBox: {
     flexDirection: 'row',
     backgroundColor: '#F3F4F6',
@@ -254,6 +329,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+    marginBottom: 16,
   },
   disabledButton: {
     backgroundColor: '#C7D2FE',
@@ -264,4 +340,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-}); 
+  noConditionsButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noConditionsText: {
+    color: '#6B7280',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+});

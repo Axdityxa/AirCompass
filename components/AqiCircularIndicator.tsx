@@ -39,6 +39,9 @@ export function AqiCircularIndicator({ value, size, strokeWidth }: AqiCircularIn
   const maxAqi = 500;
   const strokeDashoffset = circumference - (value / maxAqi) * circumference;
 
+  // Calculate a safe width for the content inside the circle
+  const contentWidth = Math.max(radius * 1.4, size * 0.6);
+
   return (
     <View style={styles.container}>
       <Svg width={size} height={size}>
@@ -67,10 +70,10 @@ export function AqiCircularIndicator({ value, size, strokeWidth }: AqiCircularIn
         />
       </Svg>
       
-      <View style={styles.valueContainer}>
+      <View style={[styles.valueContainer, { width: contentWidth }]}>
         <Text style={[styles.value, { color }]}>{value}</Text>
         <Text style={styles.label}>AQI</Text>
-        <Text style={[styles.category, { color }]}>{category}</Text>
+        <Text style={[styles.category, { color }]} numberOfLines={2} ellipsizeMode="tail">{category}</Text>
       </View>
     </View>
   );
@@ -96,9 +99,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   category: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     marginTop: 4,
     textAlign: 'center',
+    textAlignVertical: 'center',
   },
-}); 
+});
