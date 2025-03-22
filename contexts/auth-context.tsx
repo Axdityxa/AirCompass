@@ -19,6 +19,7 @@ interface AuthContextProps {
   signOut: () => Promise<void>;
   googleSignIn: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any | null }>;
+  deleteAccount: () => Promise<{ error: any | null }>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -259,6 +260,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteAccount = async () => {
+    setIsLoading(true);
+    try {
+      // Get the current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        return { error: new Error('No authenticated user found') };
+      }
+      
+      // Delete user data from the 'users' table first
+      const { error: deleteUserDataError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', currentUser.id);
+      
+      if (deleteUserDataError) {
+        console.error('Error deleting user data:', deleteUserDataError);
+        return { error: deleteUserDataError };
+      }
+      
+      // Delete the user authentication record
+      const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(
+        currentUser.id
+      );
+      
+      if (deleteAuthError) {
+        // If we can't delete the auth record, log the error but continue
+        // This might be because admin functions aren't available in client-side code
+        console.error('Error deleting user auth record:', deleteAuthError);
+        
+        // Try the standard method as a fallback
+        const { error: deleteUserError } = await supabase.rpc('delete_user');
+        
+        if (deleteUserError) {
+          console.error('Error calling delete_user RPC:', deleteUserError);
+          return { error: deleteUserError };
+        }
+      }
+      
+      // Clear local state and storage
+      setUser(null);
+      setSession(null);
+      await clearSession();
+      
+      return { error: null };
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      return { error };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const value = {
     user,
     session,
@@ -268,6 +323,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     googleSignIn,
     resetPassword,
+    deleteAccount
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

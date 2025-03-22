@@ -18,7 +18,7 @@ import AqiPreferenceCard from '@/components/AqiPreferenceCard';
 import HealthConditionsCard from '@/components/HealthConditionsCard';
 
 export default function ProfileScreen() {
-  const { user, signOut, isLoading } = useAuth();
+  const { user, signOut, isLoading, deleteAccount } = useAuth();
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -36,6 +36,68 @@ export default function ProfileScreen() {
             await signOut();
             router.replace('/auth/sign-in');
           },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Warning: This action cannot be undone. All your data will be permanently deleted.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          onPress: () => confirmDeleteAccount(),
+          style: 'destructive',
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const confirmDeleteAccount = () => {
+    // Second confirmation to ensure user really wants to delete account
+    Alert.alert(
+      'Confirm Deletion',
+      'Are you absolutely sure you want to delete your account? This action is permanent.',
+      [
+        {
+          text: 'No, Keep My Account',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, Delete Permanently',
+          onPress: async () => {
+            try {
+              const { error } = await deleteAccount();
+              
+              if (error) {
+                Alert.alert('Error', `Failed to delete account: ${error.message}`);
+                return;
+              }
+              
+              Alert.alert(
+                'Account Deleted',
+                'Your account has been successfully deleted.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => router.replace('/auth/sign-in'),
+                  },
+                ]
+              );
+            } catch (err) {
+              console.error('Error deleting account:', err);
+              Alert.alert('Error', 'An unexpected error occurred while deleting your account.');
+            }
+          },
+          style: 'destructive',
         },
       ],
       { cancelable: true }
@@ -126,6 +188,15 @@ export default function ProfileScreen() {
         >
           <Ionicons name="log-out-outline" size={20} color="#FFFFFF" style={styles.signOutIcon} />
           <Text style={styles.signOutButtonText}>Sign Out</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.deleteAccountButton}
+          onPress={handleDeleteAccount}
+          disabled={isLoading}
+        >
+          <Ionicons name="trash-outline" size={20} color="#FFFFFF" style={styles.signOutIcon} />
+          <Text style={styles.deleteAccountButtonText}>Delete Account</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -246,12 +317,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   signOutIcon: {
     marginRight: 8,
   },
   signOutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  deleteAccountButton: {
+    backgroundColor: '#991B1B',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  deleteAccountButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
