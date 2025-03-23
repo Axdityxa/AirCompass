@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LaunchScreen() {
   const router = useRouter();
@@ -11,7 +12,7 @@ export default function LaunchScreen() {
     try {
       // Set flag indicating user has started the app
       await AsyncStorage.setItem('hasStartedApp', 'true');
-      
+
       // Navigate to the permissions screen
       router.push('/permissions');
     } catch (error) {
@@ -24,29 +25,32 @@ export default function LaunchScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      
+
       <View style={styles.content}>
-        <Image 
-          source={require('../public/emily.png')} 
+        <Image
+          source={require('../public/emily.png')}
           style={styles.image}
           resizeMode="contain"
         />
-        
+
         <View style={styles.textContainer}>
-          <Text style={styles.title}>AIRCOMPASS</Text>
+          <Text style={styles.welcomeText}>Welcome to</Text>
+          <Text style={styles.title}>AirCompass</Text>
           <Text style={styles.subtitle}>
             Know your Air,{'\n'}
             Breathe with Care.
           </Text>
         </View>
-        
-        <Pressable 
+
+        <Pressable
           style={styles.button}
           onPress={handleContinue}
         >
-          <Text style={styles.buttonText}>Continue</Text>
+          <Text style={styles.buttonText}>Get Started</Text>
+          <Ionicons name="arrow-forward" size={20} color="white" style={styles.buttonIcon} />
         </Pressable>
       </View>
+      
     </View>
   );
 }
@@ -54,29 +58,37 @@ export default function LaunchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#b3c7ff', // Light purple/blue background
+    backgroundColor: '#FFC7B3', // #FFEFEF
   },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: '15%',
+    paddingVertical: '10%',
     paddingHorizontal: 24,
   },
   image: {
     width: '120%',
-    height: '70%',
-    marginBottom: 20,
+    height: '55%',
+    marginBottom: 0,
   },
   textContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginTop: -40,
+    marginBottom: 60,
+  },
+  welcomeText: {
+    fontSize: 50,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 10,
+    textAlign: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#1e88e5', // Blue color for AIRCOMPASS
-    marginBottom: 16,
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#1a365d',
+    marginBottom: 10,
   },
   subtitle: {
     fontSize: 20,
@@ -84,17 +96,33 @@ const styles = StyleSheet.create({
     color: '#424242',
     lineHeight: 28,
   },
-  button: {
-    backgroundColor: 'white',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 30,
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 60,
     width: '100%',
     alignItems: 'center',
   },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#424242',
+  button: {
+    backgroundColor: '#4c6ef5',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  buttonIcon: {
+    marginLeft: 8,
+  }
 }); 
