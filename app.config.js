@@ -16,16 +16,25 @@ export default {
   },
   ios: {
     supportsTablet: true,
+    bundleIdentifier: "com.axdityxa.aircompass",
     infoPlist: {
       NSLocationWhenInUseUsageDescription: "We need your location to provide accurate air quality data for your area.",
       NSLocationAlwaysAndWhenInUseUsageDescription: "We need your location to provide accurate air quality data for your area.",
       UIBackgroundModes: ["location", "fetch"]
+    },
+
+    icon: {
+      dark: "./assets/images/ios-dark.png",
+      light: "./assets/images/ios-light.png",
+      tinted: "./assets/images/ios-tinted.png"
     }
   },
   android: {
+    package: "com.axdityxa.aircompass",
     adaptiveIcon: {
       foregroundImage: "./assets/images/adaptive-icon.png",
-      backgroundColor: "#b3c7ff"
+      monochromeImage: "./assets/images/adaptive-icon.png",
+      backgroundColor: "#ffffff"
     },
     permissions: [
       "ACCESS_COARSE_LOCATION",
@@ -56,10 +65,14 @@ export default {
     [
       "expo-splash-screen",
       {
-        "image": "./assets/images/splash-icon.png",
+        "image": "./assets/images/splash-icon-dark.png",
         "imageWidth": 200,
         "resizeMode": "contain",
-        "backgroundColor": "#b3c7ff"
+        "backgroundColor": "#ffffff",
+        "dark": {
+          "image": "./assets/images/splash-icon-light.png",
+          "backgroundColor": "#000000"
+        }
       }
     ]
   ],

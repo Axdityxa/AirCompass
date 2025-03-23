@@ -86,8 +86,9 @@ export default function HomeScreen() {
         {/* Header with logo and profile */}
         <View style={styles.header}>
           <Image 
-            source={require('@/assets/images/logo.png')} 
+            source={require('@/assets/images/cloud.png')} 
             style={styles.logo}
+            tintColor={undefined}
           />
           <TouchableOpacity 
             style={styles.profileButton}
@@ -223,7 +224,6 @@ const styles = StyleSheet.create({
   logo: {
     width: 40,
     height: 40,
-    tintColor: '#1e88e5',
   },
   profileButton: {
     width: 40,

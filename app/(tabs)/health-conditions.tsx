@@ -106,7 +106,7 @@ export default function HealthConditionsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Animated.View entering={FadeInUp.delay(200).duration(700)} style={styles.header}>
           <Image 
-            source={require('@/assets/images/logo.png')} 
+            source={require('@/assets/images/cloud.png')} 
             style={styles.logo}
             resizeMode="contain"
           />

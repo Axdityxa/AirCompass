@@ -27,6 +27,11 @@ WebBrowser.maybeCompleteAuthSession();
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
+SplashScreen.setOptions({
+  duration:1000,
+  fade:true,
+});
+
 // This function ensures users are redirected to the right screen based on auth state
 function RootLayoutNav() {
   const { user, isLoading: authLoading } = useAuth();
