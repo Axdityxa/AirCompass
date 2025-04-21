@@ -151,9 +151,6 @@ export default function AqiParamsScreen() {
         {/* AQI Value */}
         <View style={styles.aqiContainer}>
           <Text style={styles.aqiTitle}>Current Air Quality</Text>
-          <Text style={styles.aqiSubtitle}>
-            {aqiData?.nearestStation || 'Your Location'}
-          </Text>
           
           <View style={styles.aqiIndicatorContainer}>
             <AqiCircularIndicator 
