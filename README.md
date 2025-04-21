@@ -1,4 +1,4 @@
-# AirCompass
+# AirCompass 🍃
 
 AirCompass is a mobile app that helps users monitor air quality in their area and receive alerts when air quality changes.
 
