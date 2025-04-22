@@ -83,7 +83,7 @@ export default {
     IQAIR_API_KEY: process.env.IQAIR_API_KEY,
     WAQI_API_KEY: process.env.WAQI_API_KEY,
     eas: {
-      projectId: "your-project-id"
+      projectId: "cd744ef1-35ba-4387-8fae-9d39704d449a"
     }
   }
 }; 

@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.aircompass",
+      "bundleIdentifier": "com.axdityxa.aircompass",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We need your location to provide accurate air quality data for your area.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to provide accurate air quality data for your area.",
@@ -29,7 +29,7 @@
       }
     },
     "android": {
-      "package": "com.yourcompany.aircompass",
+      "package": "com.axdityxa.aircompass",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "monochromeImage": "./assets/images/adaptive-icon.png",
