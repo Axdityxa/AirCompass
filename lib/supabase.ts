@@ -2,9 +2,35 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL as string;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string;
+// Try to get Supabase URL and key from environment variables first
+let supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL as string;
+let supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string;
+
+// If not available, try to get from Constants
+if (!supabaseUrl && Constants.expoConfig?.extra?.SUPABASE_URL) {
+  supabaseUrl = Constants.expoConfig.extra.SUPABASE_URL as string;
+  console.log('Using SUPABASE_URL from Constants');
+}
+
+if (!supabaseAnonKey && Constants.expoConfig?.extra?.SUPABASE_ANON_KEY) {
+  supabaseAnonKey = Constants.expoConfig.extra.SUPABASE_ANON_KEY as string;
+  console.log('Using SUPABASE_ANON_KEY from Constants');
+}
+
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables:',
+    !supabaseUrl ? 'EXPO_PUBLIC_SUPABASE_URL' : '',
+    !supabaseAnonKey ? 'EXPO_PUBLIC_SUPABASE_ANON_KEY' : ''
+  );
+  
+  // In development, throw an error to make it obvious
+  if (__DEV__) {
+    throw new Error('Missing required environment variables for Supabase');
+  }
+}
 
 // Create a custom storage adapter that works on all platforms
 const createCustomStorageAdapter = () => {
@@ -70,6 +96,9 @@ const createCustomStorageAdapter = () => {
   };
 };
 
+// Check for debug mode
+const isDebugMode = Constants.expoConfig?.extra?.DEBUG_MODE === true;
+
 // Initialize Supabase client with the custom storage adapter
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -78,6 +107,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: false,
     flowType: 'pkce',
+    debug: isDebugMode,
   },
   global: {
     headers: {

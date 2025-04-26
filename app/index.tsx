@@ -1,12 +1,48 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/contexts/auth-context';
+import { isExistingUser } from '@/utils/app-initializer';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function LaunchScreen() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
+  const [isChecking, setIsChecking] = useState(true);
+
+  // Check if user is already signed in
+  useEffect(() => {
+    const checkExistingUser = async () => {
+      try {
+        // If authentication is still loading, wait for it
+        if (authLoading) return;
+        
+        // If user is already logged in, skip the launch screen
+        if (user) {
+          const existing = await isExistingUser();
+          
+          if (existing) {
+            // Existing user - go straight to the main screen
+            router.replace('/(tabs)');
+          } else {
+            // User exists but hasn't finished onboarding
+            router.replace('/permissions');
+          }
+        } else {
+          // No user, show the launch screen
+          setIsChecking(false);
+        }
+      } catch (error) {
+        console.error('Error checking user status:', error);
+        setIsChecking(false);
+      }
+    };
+
+    checkExistingUser();
+  }, [user, authLoading]);
 
   const handleContinue = async () => {
     try {
@@ -21,6 +57,11 @@ export default function LaunchScreen() {
       router.push('/permissions');
     }
   };
+
+  // Show loading screen while checking user status
+  if (isChecking || authLoading) {
+    return <LoadingScreen message="Getting things ready..." />;
+  }
 
   return (
     <View style={styles.container}>

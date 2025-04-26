@@ -110,6 +110,7 @@ export function HealthConditionsProvider({ children }: { children: React.ReactNo
       const preferredAqiCategoryId = existingPrefs?.preferred_aqi_category || 
                                      (preferredAqiCategory ? preferredAqiCategory.id : 1);
       
+      // Make sure we're explicitly setting the hasExplicitlySetConditions flag
       const { error } = await supabase
         .from('user_preferences')
         .upsert({
@@ -119,14 +120,17 @@ export function HealthConditionsProvider({ children }: { children: React.ReactNo
           has_cardiovascular_disease: conditions.hasCardiovascularDisease,
           has_cancer_risk: conditions.hasCancerRisk,
           other_health_conditions: conditions.otherConditions,
-          has_explicitly_set_conditions: hasExplicitlySet,
+          has_explicitly_set_conditions: hasExplicitlySet, // This is critical for proper navigation
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
         
       if (error) {
         console.error('Error saving health conditions:', error);
       } else {
+        // Update the local state
         setHealthConditions(conditions);
+        
+        // Make sure we update this flag to match what we just saved
         setHasExplicitlySetConditions(hasExplicitlySet);
         
         // Check if any condition is set
@@ -136,6 +140,8 @@ export function HealthConditionsProvider({ children }: { children: React.ReactNo
                                !!conditions.otherConditions;
         
         setHasSetHealthConditions(hasAnyCondition);
+        
+        console.log('Successfully saved health conditions with explicitly set =', hasExplicitlySet);
       }
     } catch (error) {
       console.error('Error saving health conditions:', error);

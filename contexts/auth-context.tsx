@@ -89,7 +89,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(null);
             setSession(null);
           } else {
-            await ensureUserExists();
+            // If refresh was successful, get the current session
+            const { data, error } = await supabase.auth.getSession();
+            if (!error && data?.session) {
+              setSession(data.session);
+              setUser(data.session.user);
+              await ensureUserExists();
+            }
           }
         } else {
           // If session is valid, get it

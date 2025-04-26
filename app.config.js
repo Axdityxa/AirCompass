@@ -82,8 +82,22 @@ export default {
   extra: {
     IQAIR_API_KEY: process.env.IQAIR_API_KEY,
     WAQI_API_KEY: process.env.WAQI_API_KEY,
+    
+    // Important! Explicitly include Supabase variables here to ensure they are bundled in production
+    SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+    SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    
+    // Add a developer debug mode flag - set to true to help with troubleshooting
+    DEBUG_MODE: process.env.DEBUG_MODE === 'true' || false,
+    
     eas: {
       projectId: "cd744ef1-35ba-4387-8fae-9d39704d449a"
     }
+  },
+  // Make sure the Supabase environment variables are explicitly defined as public
+  // This ensures they are properly included in the production build
+  publicRuntimeConfig: {
+    EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
   }
 }; 

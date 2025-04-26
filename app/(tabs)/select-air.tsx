@@ -34,10 +34,20 @@ export default function SelectAirScreen() {
   const handleSavePreference = async () => {
     if (!selectedCategory) return;
     
-    await savePreference(selectedCategory);
-    
-    // Navigate to the health conditions screen
-    router.replace('/(tabs)/health-conditions');
+    try {
+      // Save the selected AQI preference
+      await savePreference(selectedCategory);
+      
+      // Wait a moment to ensure the preference is saved
+      setTimeout(() => {
+        // Navigate to the health conditions screen
+        router.replace('/(tabs)/health-conditions');
+      }, 100);
+    } catch (error) {
+      console.error('Error saving AQI preference:', error);
+      // Navigate anyway in case of error
+      router.replace('/(tabs)/health-conditions');
+    }
   };
 
   return (

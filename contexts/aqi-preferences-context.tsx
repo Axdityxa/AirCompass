@@ -83,11 +83,40 @@ export function AqiPreferencesProvider({ children }: { children: React.ReactNode
       // Ensure user exists in the users table before saving preferences
       await ensureUserExists();
       
+      // Get existing user preferences to check for health conditions data
+      const { data: existingPrefs, error: fetchError } = await supabase
+        .from('user_preferences')
+        .select('has_respiratory_issues, has_cardiovascular_disease, has_cancer_risk, other_health_conditions, has_explicitly_set_conditions')
+        .eq('user_id', user.id)
+        .single();
+      
+      // Default health condition values
+      let hasRespiratoryIssues = false;
+      let hasCardiovascularDisease = false;
+      let hasCancerRisk = false;
+      let otherHealthConditions = null;
+      let hasExplicitlySetConditions = false;
+      
+      // If we found existing preferences, use those values
+      if (!fetchError && existingPrefs) {
+        hasRespiratoryIssues = existingPrefs.has_respiratory_issues || false;
+        hasCardiovascularDisease = existingPrefs.has_cardiovascular_disease || false;
+        hasCancerRisk = existingPrefs.has_cancer_risk || false;
+        otherHealthConditions = existingPrefs.other_health_conditions || null;
+        hasExplicitlySetConditions = existingPrefs.has_explicitly_set_conditions || false;
+      }
+      
+      // Save new preferences while preserving existing health conditions
       const { error } = await supabase
         .from('user_preferences')
         .upsert({
           user_id: user.id,
           preferred_aqi_category: categoryId,
+          has_respiratory_issues: hasRespiratoryIssues,
+          has_cardiovascular_disease: hasCardiovascularDisease,
+          has_cancer_risk: hasCancerRisk,
+          other_health_conditions: otherHealthConditions,
+          has_explicitly_set_conditions: hasExplicitlySetConditions,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
         
@@ -97,6 +126,7 @@ export function AqiPreferencesProvider({ children }: { children: React.ReactNode
         const category = AQI_CATEGORIES.find(c => c.id === categoryId) || null;
         setPreferredAqiCategory(category);
         setHasSetPreference(true);
+        console.log('Successfully saved AQI preference:', categoryId);
       }
     } catch (error) {
       console.error('Error saving preference:', error);

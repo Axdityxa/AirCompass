@@ -3,6 +3,59 @@ import { clearSession, refreshSession, isSessionValid } from './session-helper';
 import { initializeNotifications } from './notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ensureUserExists } from './user-helper';
+import * as SplashScreen from 'expo-splash-screen';
+import Constants from 'expo-constants';
+
+// Set a maximum wait time for the splash screen (in milliseconds)
+const MAX_SPLASH_WAIT_TIME = 5000; // 5 seconds
+
+/**
+ * Ensures that the splash screen is hidden after a maximum wait time
+ * This is to prevent the app from being stuck on the splash screen
+ */
+export function ensureSplashScreenIsHidden(): void {
+  // Set a timeout to hide the splash screen after MAX_SPLASH_WAIT_TIME
+  setTimeout(() => {
+    SplashScreen.hideAsync().catch(error => {
+      console.warn('Error hiding splash screen:', error);
+    });
+  }, MAX_SPLASH_WAIT_TIME);
+}
+
+/**
+ * Checks if a user is already signed in and has completed the onboarding process
+ * @returns A promise that resolves to a boolean indicating if the user is an existing user
+ */
+export async function isExistingUser(): Promise<boolean> {
+  try {
+    // Check if there's a valid session
+    const hasValidSession = await isSessionValid();
+    if (!hasValidSession) return false;
+    
+    // Get the current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) return false;
+    
+    // Check if the user has already set preferences and health conditions
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .select('preferred_aqi_category, has_explicitly_set_conditions')
+      .eq('user_id', userData.user.id)
+      .single();
+    
+    if (error) {
+      console.error('Error checking user preferences:', error);
+      return false;
+    }
+    
+    // Check if both preferences and health conditions have been explicitly set
+    return data && data.preferred_aqi_category !== null && data.has_explicitly_set_conditions === true;
+    
+  } catch (error) {
+    console.error('Error checking existing user:', error);
+    return false;
+  }
+}
 
 /**
  * Initializes the app by checking and refreshing the session if needed
@@ -10,6 +63,9 @@ import { ensureUserExists } from './user-helper';
  */
 export async function initializeApp(): Promise<void> {
   try {
+    // Set up the safety net to ensure splash screen is hidden after a timeout
+    ensureSplashScreenIsHidden();
+    
     // Initialize notifications
     await initializeNotifications();
     
@@ -44,6 +100,24 @@ export async function initializeApp(): Promise<void> {
  */
 export async function resetAppState(): Promise<void> {
   try {
+    // Get the current user
+    const { data, error } = await supabase.auth.getUser();
+    if (!error && data?.user) {
+      // Reset the user's preferences in the database
+      await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: data.user.id,
+          preferred_aqi_category: null,
+          has_respiratory_issues: false,
+          has_cardiovascular_disease: false,
+          has_cancer_risk: false,
+          other_health_conditions: null,
+          has_explicitly_set_conditions: false,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+    }
+    
     // Clear session
     await clearSession();
     
@@ -55,6 +129,9 @@ export async function resetAppState(): Promise<void> {
     
     // Clear AQI preferences
     await AsyncStorage.removeItem('aqiPreferences');
+    
+    // Clear health conditions
+    await AsyncStorage.removeItem('healthConditions');
     
     console.log('App state has been reset');
   } catch (error) {
