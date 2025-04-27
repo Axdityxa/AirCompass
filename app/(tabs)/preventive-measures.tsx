@@ -332,9 +332,6 @@ export default function PreventiveMeasuresScreen() {
         <Text style={styles.aqiInfoTitle}>
           Current AQI: <Text style={styles.aqiValue}>{aqiData?.aqi || 'N/A'}</Text>
         </Text>
-        <Text style={styles.aqiInfoSubtitle}>
-          {aqiData?.nearestStation || 'Your Location'}
-        </Text>
       </View>
       
       {/* Category Selector */}

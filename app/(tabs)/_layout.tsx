@@ -102,6 +102,15 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="notification-settings"
+        options={{
+          title: 'Notification Settings',
+          tabBarIcon: ({ color }) => <Ionicons name="notifications-outline" size={24} color={color} />,
+          // Hide this tab from the tab bar since it's accessed from other screens
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

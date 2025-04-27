@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter, useSegments, usePathname, ErrorBoundary } from 'expo-router';
+import { Stack, useRouter, useSegments, usePathname, ErrorBoundary, Slot } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -20,6 +20,7 @@ import { AqiPreferencesProvider, useAqiPreferences } from '@/contexts/aqi-prefer
 import { HealthConditionsProvider, useHealthConditions } from '@/contexts/health-conditions-context';
 import { PermissionsProvider, usePermissions } from '@/contexts/permissions-context';
 import { AqiDataProvider } from '@/contexts/aqi-data-context';
+import { NotificationProvider } from '@/contexts/notification-context';
 import { initializeApp, ensureSplashScreenIsHidden, isExistingUser } from '@/utils/app-initializer';
 import LoadingScreen from '@/components/LoadingScreen';
 
@@ -233,13 +234,15 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="permissions" />
-        <Stack.Screen name="auth" />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
+      <View style={{ flex: 1 }}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="permissions" />
+          <Stack.Screen name="auth" />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </View>
       <StatusBar style="auto" />
     </ThemeProvider>
   );
@@ -325,7 +328,9 @@ export default function RootLayout() {
             <AqiPreferencesProvider>
               <HealthConditionsProvider>
                 <AqiDataProvider>
-                  <RootLayoutNav />
+                  <NotificationProvider>
+                    <RootLayoutNav />
+                  </NotificationProvider>
                 </AqiDataProvider>
               </HealthConditionsProvider>
             </AqiPreferencesProvider>
