@@ -255,4 +255,4 @@ The app requires the following permissions:
 - React Native
 - Expo
 - TypeScript
-- OpenWeatherMap API for air quality data
+- WAQI and IQAir APIs for air quality data
