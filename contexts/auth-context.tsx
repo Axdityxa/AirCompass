@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (!error && data?.session) {
               setSession(data.session);
               setUser(data.session.user);
-              await ensureUserExists();
+            await ensureUserExists();
             }
           }
         } else {

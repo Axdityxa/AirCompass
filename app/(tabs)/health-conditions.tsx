@@ -77,13 +77,13 @@ export default function HealthConditionsScreen() {
   const handleSaveConditions = async () => {
     try {
       // Save the selected conditions and explicitly mark as completed
-      await saveHealthConditions({
-        hasRespiratoryIssues: selectedConditions.respiratory,
-        hasCardiovascularDisease: selectedConditions.cardiovascular,
-        hasCancerRisk: selectedConditions.cancer,
-        otherConditions: otherConditions.trim() || null,
+    await saveHealthConditions({
+      hasRespiratoryIssues: selectedConditions.respiratory,
+      hasCardiovascularDisease: selectedConditions.cardiovascular,
+      hasCancerRisk: selectedConditions.cancer,
+      otherConditions: otherConditions.trim() || null,
       }, true); // True means user has explicitly set conditions
-      
+    
       // Navigate to the main dashboard after a short delay to ensure data is saved
       setTimeout(() => {
         router.replace('/(tabs)');
@@ -91,20 +91,20 @@ export default function HealthConditionsScreen() {
     } catch (error) {
       console.error('Error saving health conditions:', error);
       // Navigate anyway in case of error
-      router.replace('/(tabs)');
+    router.replace('/(tabs)');
     }
   };
 
   const handleNoConditions = async () => {
     try {
       // Set all conditions to false and explicitly mark as completed
-      await saveHealthConditions({
-        hasRespiratoryIssues: false,
-        hasCardiovascularDisease: false,
-        hasCancerRisk: false,
-        otherConditions: null,
+    await saveHealthConditions({
+      hasRespiratoryIssues: false,
+      hasCardiovascularDisease: false,
+      hasCancerRisk: false,
+      otherConditions: null,
       }, true); // True means user has explicitly set conditions
-      
+    
       // Navigate to the main dashboard after a short delay to ensure data is saved
       setTimeout(() => {
         router.replace('/(tabs)');
@@ -112,7 +112,7 @@ export default function HealthConditionsScreen() {
     } catch (error) {
       console.error('Error saving health conditions:', error);
       // Navigate anyway in case of error
-      router.replace('/(tabs)');
+    router.replace('/(tabs)');
     }
   };
 

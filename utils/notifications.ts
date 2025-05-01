@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AqiCategory } from '@/types/aqi';
 import { NotificationSettings } from '@/contexts/notification-context';
+import { fetchAqiData } from '@/utils/api-service';
 
 // Notification channels for Android
 export const CHANNELS = {
@@ -98,8 +99,11 @@ export async function registerForPushNotificationsAsync() {
       projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
     })).data;
     
-    // Store token for later reference
+    // Store token for later reference - using both keys for backward compatibility
     await AsyncStorage.setItem('push_token', token);
+    await AsyncStorage.setItem('expoPushToken', JSON.stringify(token));
+    
+    console.log(`Stored push token: ${token}`);
     
     // If user is authenticated, store the token in Supabase
     try {
@@ -191,33 +195,60 @@ export async function checkAirQualityForNotification(
   aqiThreshold: number, 
   timeLastChecked: number | null
 ) {
-  // Only make API call if it's been at least 1 hour since last check
+  // Only make API call if it's been at least 1 hour since last check or if forced for testing
   const now = Date.now();
   const ONE_HOUR = 60 * 60 * 1000;
   
   if (!timeLastChecked || (now - timeLastChecked > ONE_HOUR)) {
-    // Make the API call to your AQI endpoint
-    // This is where you'd implement batching logic if you have a backend
-    
-    // For now, pretend we're getting data and returning it
-    // In a real implementation, this would be your actual API call
-    
-    // Store the time of this check
-    await AsyncStorage.setItem('last_aqi_check', now.toString());
-    
-    // Return mock data for now - replace with actual API call
-    return {
-      aqi: 75, 
-      time: now,
-      pollutants: {
-        pm25: 15,
-        pm10: 30,
-        o3: 45
-      }
-    };
+    try {
+      // Log that we're checking AQI to help with debugging
+      console.log(`[AQI Check] Checking AQI at lat: ${latitude}, lon: ${longitude}`);
+      
+      // Get notification frequency setting to determine force check
+      const settings = await getNotificationSettings();
+      const isHighFrequency = settings?.frequency === 'high';
+      
+      // Use the same fetch function as the main app
+      console.log('[AQI Check] Fetching from API using shared service');
+      const aqiData = await fetchAqiData(latitude, longitude);
+      
+      // Store the time of this check
+      await AsyncStorage.setItem('last_aqi_check', now.toString());
+      
+      // Log the received AQI data
+      console.log(`[AQI Check] Received AQI: ${aqiData.aqi || 'N/A'}`);
+      
+      // Convert the data to the format expected by the notification system
+      return {
+        aqi: aqiData.aqi,
+        time: now,
+        pollutants: {
+          pm25: aqiData.sources[0]?.pollutants.pm25 || 0,
+          pm10: aqiData.sources[0]?.pollutants.pm10 || 0,
+          o3: aqiData.sources[0]?.pollutants.o3 || 0
+        }
+      };
+    } catch (error) {
+      console.error('[AQI Check] Error fetching AQI data:', error);
+      
+      // In case of error in production, don't send notifications
+      if (!__DEV__) return null;
+      
+      // In development, use test data to ensure notifications work
+      return {
+        aqi: aqiThreshold + 20, // Above threshold to trigger notification
+        time: now,
+        pollutants: {
+          pm25: 30,
+          pm10: 50,
+          o3: 100
+        }
+      };
+    }
   }
   
-  // If we've checked recently, return null to indicate no new check was made
+  // If we've checked recently and don't need to force another check, return null
+  console.log('[AQI Check] Skipping check, last check was too recent');
   return null;
 }
 
@@ -361,4 +392,82 @@ export function addNotificationResponseListener(
   listener: (response: Notifications.NotificationResponse) => void
 ): Notifications.Subscription {
   return Notifications.addNotificationResponseReceivedListener(listener);
+}
+
+/**
+ * Sends a data-only push notification to trigger background processing
+ * This type of notification will not appear in the notification tray
+ * but will trigger the background task if the app is in the background
+ * @param expoPushToken Expo push token to send the notification to
+ * @param data Data to include in the notification
+ */
+export async function sendBackgroundDataNotification(expoPushToken: string, data: Record<string, any>): Promise<boolean> {
+  try {
+    const message = {
+      to: expoPushToken,
+      data: data,
+      // Required for iOS background processing
+      _contentAvailable: true,
+      // If you need to priority (default is 'default')
+      priority: 'high',
+    };
+    
+    const response = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    });
+    
+    const responseData = await response.json();
+    console.log('Background notification sent:', responseData);
+    return responseData.data && responseData.data.status === 'ok';
+  } catch (error) {
+    console.error('Error sending background notification:', error);
+    return false;
+  }
+}
+
+/**
+ * Sends a visible push notification with title and body that will appear in the notification tray
+ * @param expoPushToken Expo push token to send the notification to
+ * @param title Notification title
+ * @param body Notification body
+ * @param data Additional data to include in the notification
+ */
+export async function sendVisiblePushNotification(
+  expoPushToken: string, 
+  title: string, 
+  body: string, 
+  data: Record<string, any> = {}
+): Promise<boolean> {
+  try {
+    const message = {
+      to: expoPushToken,
+      sound: 'default',
+      title: title,
+      body: body,
+      data: data,
+    };
+    
+    const response = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    });
+    
+    const responseData = await response.json();
+    console.log('Visible notification sent:', responseData);
+    return responseData.data && responseData.data.status === 'ok';
+  } catch (error) {
+    console.error('Error sending visible notification:', error);
+    return false;
+  }
 } 

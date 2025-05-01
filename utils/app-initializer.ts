@@ -5,6 +5,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ensureUserExists } from './user-helper';
 import * as SplashScreen from 'expo-splash-screen';
 import Constants from 'expo-constants';
+import { 
+  registerBackgroundFetchAsync, 
+  registerBackgroundLocationAsync,
+  isBackgroundFetchRegisteredAsync,
+  isBackgroundLocationRegisteredAsync
+} from './background-tasks';
 
 // Set a maximum wait time for the splash screen (in milliseconds)
 const MAX_SPLASH_WAIT_TIME = 5000; // 5 seconds
@@ -58,6 +64,36 @@ export async function isExistingUser(): Promise<boolean> {
 }
 
 /**
+ * Register the background tasks if they are not already registered
+ */
+async function setupBackgroundTasks(): Promise<void> {
+  try {
+    // Check if background fetch is registered
+    const isBackgroundFetchRegistered = await isBackgroundFetchRegisteredAsync();
+    if (!isBackgroundFetchRegistered) {
+      await registerBackgroundFetchAsync();
+    }
+    
+    // Check notification settings
+    const notificationSettingsString = await AsyncStorage.getItem('notification_settings');
+    if (notificationSettingsString) {
+      const notificationSettings = JSON.parse(notificationSettingsString);
+      
+      // Only register background location if location alerts are enabled
+      if (notificationSettings.locationAlerts) {
+        // Check if background location is registered
+        const isBackgroundLocationRegistered = await isBackgroundLocationRegisteredAsync();
+        if (!isBackgroundLocationRegistered) {
+          await registerBackgroundLocationAsync();
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error setting up background tasks:', error);
+  }
+}
+
+/**
  * Initializes the app by checking and refreshing the session if needed
  * @returns A promise that resolves when initialization is complete
  */
@@ -82,10 +118,16 @@ export async function initializeApp(): Promise<void> {
       } else {
         // If session was refreshed, ensure user exists
         await ensureUserExists();
+        
+        // Set up background tasks if user is authenticated
+        await setupBackgroundTasks();
       }
     } else {
       // If session is valid, ensure user exists
       await ensureUserExists();
+      
+      // Set up background tasks if user is authenticated
+      await setupBackgroundTasks();
     }
   } catch (error) {
     console.error('Error initializing app:', error);

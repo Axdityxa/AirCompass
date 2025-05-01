@@ -19,8 +19,12 @@ export default {
     bundleIdentifier: "com.axdityxa.aircompass",
     infoPlist: {
       NSLocationWhenInUseUsageDescription: "We need your location to provide accurate air quality data for your area.",
-      NSLocationAlwaysAndWhenInUseUsageDescription: "We need your location to provide accurate air quality data for your area.",
-      UIBackgroundModes: ["location", "fetch"]
+      NSLocationAlwaysAndWhenInUseUsageDescription: "We need your location to provide accurate air quality data for your area and send you alerts when air quality deteriorates.",
+      UIBackgroundModes: ["location", "fetch", "remote-notification"],
+      BGTaskSchedulerPermittedIdentifiers: [
+        "background-fetch-aqi",
+        "background-location-task"
+      ]
     },
 
     icon: {
@@ -39,7 +43,9 @@ export default {
     permissions: [
       "ACCESS_COARSE_LOCATION",
       "ACCESS_FINE_LOCATION",
-      "ACCESS_BACKGROUND_LOCATION"
+      "ACCESS_BACKGROUND_LOCATION",
+      "RECEIVE_BOOT_COMPLETED",
+      "WAKE_LOCK"
     ]
   },
   web: {
@@ -52,7 +58,8 @@ export default {
     [
       "expo-location",
       {
-        "locationAlwaysAndWhenInUsePermission": "Allow AirCompass to use your location to provide accurate air quality data."
+        "locationAlwaysAndWhenInUsePermission": "Allow AirCompass to use your location to provide accurate air quality data and alerts.",
+        "isAndroidBackgroundLocationEnabled": true
       }
     ],
     [
@@ -74,14 +81,23 @@ export default {
           "backgroundColor": "#000000"
         }
       }
+    ],
+    [
+      "expo-task-manager",
+      {
+        "backgroundTaskName": "background-fetch-aqi",
+        "backgroundTaskIdentifier": "background-fetch-aqi",
+        "backgroundTaskPeriod": 15, // Minutes
+        "backgroundTaskTimeout": 30 // Seconds
+      }
     ]
   ],
   experiments: {
     typedRoutes: true
   },
   extra: {
-    IQAIR_API_KEY: process.env.IQAIR_API_KEY,
-    WAQI_API_KEY: process.env.WAQI_API_KEY,
+    EXPO_PUBLIC_IQAIR_API_KEY: process.env.EXPO_PUBLIC_IQAIR_API_KEY || process.env.IQAIR_API_KEY,
+    EXPO_PUBLIC_WAQI_API_KEY: process.env.EXPO_PUBLIC_WAQI_API_KEY || process.env.WAQI_API_KEY,
     
     // Important! Explicitly include Supabase variables here to ensure they are bundled in production
     SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,

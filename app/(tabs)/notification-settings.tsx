@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NotificationSettings from '@/components/NotificationSettings';
+import NotificationTester from '@/components/NotificationTester';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -44,9 +45,15 @@ export default function NotificationSettingsScreen() {
         <Text style={styles.title}>Notification Settings</Text>
         <View style={{ width: 40 }} />
       </View>
-      <View style={styles.content}>
+      <ScrollView style={styles.content}>
         <NotificationSettings />
-      </View>
+        
+        {/* Add divider */}
+        <View style={styles.divider} />
+        
+        {/* Add notification tester component */}
+        <NotificationTester />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -75,6 +82,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 16,
+    marginHorizontal: 16,
   },
   errorContainer: {
     flex: 1,

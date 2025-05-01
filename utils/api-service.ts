@@ -1,8 +1,17 @@
 import axios from 'axios';
+import Constants from 'expo-constants';
 
-// Get API keys directly from environment variables
-const IQAIR_API_KEY = '9f322111-a798-4eaf-aade-fe81619c8ec7';
-const WAQI_API_KEY = '5619ba27486964b2dfd255aa99bc29577a7d5ad5';
+// Get API keys with fallbacks for Expo Go and production builds
+const IQAIR_API_KEY = process.env.EXPO_PUBLIC_IQAIR_API_KEY || 
+                     (Constants.expoConfig?.extra?.EXPO_PUBLIC_IQAIR_API_KEY as string);
+const WAQI_API_KEY = process.env.EXPO_PUBLIC_WAQI_API_KEY || 
+                    (Constants.expoConfig?.extra?.EXPO_PUBLIC_WAQI_API_KEY as string);
+
+// For debugging in Expo Go
+if (__DEV__) {
+  console.log('IQAIR API Key available:', !!IQAIR_API_KEY);
+  console.log('WAQI API Key available:', !!WAQI_API_KEY);
+}
 
 // Define API endpoints
 const IQAIR_API_URL = 'https://api.airvisual.com/v2';
@@ -142,6 +151,14 @@ function getAlternatives(aqi: number): string[] {
  */
 export async function fetchAqiData(latitude: number, longitude: number): Promise<AqiData> {
   try {
+    // Log API request details in development mode
+    if (__DEV__) {
+      console.log(`Attempting to fetch AQI data:`);
+      console.log(`- IQAir endpoint: ${IQAIR_API_URL}/nearest_city?lat=${latitude}&lon=${longitude}`);
+      console.log(`- WAQI endpoint: ${WAQI_API_URL}/feed/geo:${latitude};${longitude}/`);
+      console.log(`- API keys available: IQAir (${!!IQAIR_API_KEY}), WAQI (${!!WAQI_API_KEY})`);
+    }
+
     // Fetch data from both APIs in parallel
     const [iqAirResponse, waqiResponse] = await Promise.all([
       axios.get(`${IQAIR_API_URL}/nearest_city`, {
@@ -250,7 +267,26 @@ export async function fetchAqiData(latitude: number, longitude: number): Promise
       sources
     };
   } catch (error) {
-    console.error('Error fetching AQI data:', error);
+    // Enhanced error logging
+    if (__DEV__) {
+      console.error('Error fetching AQI data:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('API Response details:');
+        console.error('- Status:', error.response?.status);
+        console.error('- Status Text:', error.response?.statusText);
+        console.error('- Response data:', error.response?.data);
+        console.error('- Request URL:', error.config?.url);
+        console.error('- Request params:', error.config?.params);
+      }
+    } else {
+      console.error('Error fetching AQI data:', error);
+    }
+
+    // Return mock data in development mode or throw in production
+    if (__DEV__) {
+      console.log('Returning mock AQI data for development');
+      return mockAqiData;
+    }
     throw error;
   }
 }
