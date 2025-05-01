@@ -243,16 +243,6 @@ END $$;
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-```
-# Start the development server
-npx expo start --clear
-
-# Start with a specific platform
-npx expo start --android
-npx expo start --ios
-npx expo start --web
-```
-
 ## Permissions
 
 The app requires the following permissions:
